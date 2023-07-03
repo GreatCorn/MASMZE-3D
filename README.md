@@ -14,6 +14,7 @@ GCM is a model format, similar to obj, however, it doesn't support multiple mate
 GCS is simply a renamed OGG Vorbis file for obfuscation purposes without exclusively packing them.
 The in-game bitmap font uses a GCF file that contains null-terminated string paths to all the characters, having a fixed length of 15 characters, including NUL. For the reason of punctuation characters, some font symbols are renamed as GCG, instead of GCT.
 
+***
 
 The game's code, not including the external libraries, is licensed under the GNU General Public License v3.0. The game's assets are licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
 
