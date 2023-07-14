@@ -21,11 +21,23 @@ option casemap:none
 
 ; Include libraries (I couldn't configure ML to compile without absolute path,
 ; change this to whatever directory you have MASM32 in)
-include E:\masm32\include\masm32rt.inc
+include E:\masm32\include\windows.inc
+
+include E:\masm32\include\gdi32.inc
+includelib E:\masm32\lib\gdi32.lib
 include E:\masm32\include\glu32.inc
 includelib E:\masm32\lib\glu32.lib
+include E:\masm32\include\kernel32.inc
+includelib E:\masm32\lib\kernel32.lib
+include E:\masm32\include\masm32.inc
+includelib E:\masm32\lib\masm32.lib
+include E:\masm32\include\msvcrt.inc
+includelib E:\masm32\lib\msvcrt.lib
 include E:\masm32\include\opengl32.inc
 includelib E:\masm32\lib\opengl32.lib
+include E:\masm32\include\user32.inc
+includelib E:\masm32\lib\user32.lib
+
 include E:\masm32\macros\macros.asm
 
 ; Include project files
@@ -41,6 +53,8 @@ MZC_PASSLEFT EQU 2
 MZC_VISITED EQU 4
 MZC_LAMP EQU 8
 MZC_PIPE EQU 16
+MZC_WIRES EQU 32
+MZC_TABURETKA EQU 64
 MZC_ROTATED EQU 128
 
 FNT_LEFT EQU 0		; Font alignment constants for DrawBitmapText
@@ -74,9 +88,16 @@ CCRandom4 DB "DAMPNESS CLINGS TO THE WALLS.", 0
 CCRandom5 DB "SOMETHING WATCHES FROM AFAR.", 0
 CCRandom6 DB "THE WALLS VIBRATE SLIGHTLY.", 0
 
+CCCompass DB "PICKED UP COMPASS.", 0
 CCGlyphNone DB "THE ABYSS IMMURES THINE MALEFACTIONS.", 0
+CCGlyphRestore DB "THINE EXCULPATION BETIDES.", 0
 CCKey DB "PICKED UP KEY.", 0
 CCSpace DB "MASH SPACE TO FIGHT BACK", 0
+CCTeleport DB "REALITY BENDS, FRACTURES EMERGE", 0
+
+CCIntro1 DB "GREATCORN PRESENTS", 0
+CCIntro2 DB "A GAME WRITTEN IN X86 ASSEMBLY", 0
+CCIntro3 DB "WITH MASM32 AND OPENGL", 0
 
 MenuBrightness DB "BRIGHTNESS", 0	; Menu-related strings
 MenuSettings DB "SETTINGS", 0
@@ -103,10 +124,14 @@ Ini05 DB "0.5", 0
 
 ; Resource paths
 ImgBricks DB "GFX\bricks.gct", 0	; Images
+ImgCompass DB "GFX\compass.gct", 0
+ImgCompassWorld DB "GFX\compassWorld.gct", 0
 ImgCursor DB "GFX\cursor.gct", 0
 ImgDoor DB "GFX\door.gct", 0
 ImgDoorblur DB "GFX\doorblur.gct", 0
+ImgFacade DB "GFX\facade.gct", 0
 ImgFloor DB "GFX\floor.gct", 0
+ImgGlyphs DB "GFX\glyphs.gct", 0
 ImgKey DB "GFX\key.gct", 0
 ImgLamp DB "GFX\lamp.gct", 0
 ImgMetal DB "GFX\metal.gct", 0
@@ -114,9 +139,12 @@ ImgMetalFloor DB "GFX\metalFloor.gct", 0
 ImgMetalRoof DB "GFX\metalRoof.gct", 0
 ImgNoise DB "GFX\noise.gct", 0
 ImgPipe DB "GFX\pipe.gct", 0
+ImgRain DB "GFX\rain.gct", 0
 ImgRoof DB "GFX\roof.gct", 0
 ImgShadow DB "GFX\shadow.gct", 0
+ImgTaburetka DB "GFX\taburetka.gct", 0
 ImgTilefloor DB "GFX\tilefloor.gct", 0
+ImgTree DB "GFX\tree.gct", 0
 ImgVignette DB "GFX\vignette.gct", 0
 ImgVignetteRed DB "GFX\vignetteRed.gct", 0
 ImgWall DB "GFX\wall.gct", 0
@@ -155,16 +183,31 @@ ImgFontPath DB "GFX\font\font.gcf", 0	; A collection of paths to images
 
 MdlSphere DB "Sphere.gcm", 0	; Models
 MdlUVCube DB "UVCube.gcm", 0
+MdlCompassArrow DB "GFX\compassArrow.gcm", 0
+MdlCompassWorld DB "GFX\compassWorld.gcm", 0
 MdlDoor DB "GFX\door.gcm", 0
 MdlDoorway DB "GFX\doorwayM.gcm", 0
 MdlDoorFrame DB "GFX\doorFrame.gcm", 0
 MdlDoorFrameLock DB "GFX\doorFrameLock.gcm", 0
+MdlGlyphs DB "GFX\glyphs.gcm", 0
 MdlKey DB "GFX\key.gcm", 0
 MdlLamp DB "GFX\lamp.gcm", 0
 MdlPadlock DB "GFX\padlock.gcm", 0
 MdlPipe DB "GFX\pipe.gcm", 0
 MdlPlane DB "GFX\planeM.gcm", 0
+MdlSigil1 DB "GFX\sigil1.gcm", 0
+MdlSigil2 DB "GFX\sigil2.gcm", 0
 MdlStairs DB "GFX\stairsM.gcm", 0
+MdlTaburetka DB "GFX\taburetka.gcm", 0
+MdlWires DB "GFX\wires.gcm", 0
+
+MdlCityConcrete DB "GFX\cityConcrete.gcm", 0
+MdlCityFacade DB "GFX\cityFacade.gcm", 0
+MdlCityTerrain DB "GFX\cityTerrain.gcm", 0
+MdlOutsBunker DB "GFX\outskirtsBunker.gcm", 0
+MdlOutsRoad DB "GFX\outskirtsRoad.gcm", 0
+MdlOutsTerrain DB "GFX\outskirtsTerrain.gcm", 0
+MdlOutsTrees DB "GFX\outskirtsTrees.gcm", 0
 
 MdlWallB DB "GFX\wallB.gcm", 0
 MdlWallM DB "GFX\wallM.gcm", 0
@@ -198,6 +241,9 @@ SndAmbPath DB "SFX\amb.gcs", 0		; Sounds
 SndDeathPath DB "SFX\death.gcs", 0
 SndDripPath DB "SFX\drip.gcs", 0
 SndExitPath DB "SFX\exit.gcs", 0
+SndExplosionPath DB "SFX\explosion.gcs", 0
+SndImpactPath DB "SFX\impact.gcs", 0
+SndIntroPath DB "SFX\intro.gcs", 0
 SndStep1 DB "SFX\step-01.gcs", 0
 SndStep2 DB "SFX\step-02.gcs", 0
 SndStep3 DB "SFX\step-03.gcs", 0
@@ -208,6 +254,7 @@ SndKubaleAppearPath DB "SFX\kubaleAppear.gcs", 0
 SndKubaleVPath DB "SFX\kubaleV.gcs", 0
 SndMistakePath DB "SFX\mistake.gcs", 0
 SndScribblePath DB "SFX\scribble.gcs", 0
+SndSirenPath DB "SFX\siren.gcs", 0
 SndWhisperPath DB "SFX\wh.gcs", 0
 SndWmblykPath DB "SFX\wmblyk.gcs", 0
 SndWmblykBPath DB "SFX\wmblykB.gcs", 0
@@ -247,13 +294,16 @@ fl1 REAL4 1.0
 fl1n2 REAL4 1.2
 fl1n5 REAL4 1.5
 fl2 REAL4 2.0
+fl3 REAL4 3.0
 fl4 REAL4 4.0
 fl5 REAL4 5.0
+fl6 REAL4 6.0
 fl10 REAL4 10.0
 fl12 REAL4 12.0
 fl32 REAL4 32.0
 fl90 REAL4 90.0
 fl90N REAL4 -90.0
+fl360 REAL4 360.0
 fl1000 REAL4 1000.0
 fl10000 REAL4 10000.0
 
@@ -285,7 +335,7 @@ focused BYTE 1				; Window focus
 fullscreen BYTE 0			; Boolean to store if the game is fullscreen
 lastTime DWORD 0			; Used to compare performance counter for deltaTime
 perfFreq DWORD 0, 0			; 'QWORD' performance frequency, for deltaTime
-playerState BYTE 1			; Player state for various uses, like cutscenes
+playerState BYTE 11			; Player state for various uses, like cutscenes
 screenSize DWORD 800, 600	; Screen size, changes when resizing
 tick DWORD 0, 0				; 'QWORD' current tick, for deltaTime
 windowSize DWORD 800, 600	; Window size to change back to after fullscreen
@@ -313,15 +363,16 @@ camForward REAL4 0.0, 0.0, 0.0		; Camera forward vector
 camListener REAL4 0.0, 0.0, 0.0, 0.0, -1.0, 0.0
 camLight REAL4 -0.0, 0.0, -0.0		; Camera light local position
 ; Only the camera uses negative coordinates in glTranslatef
-camPos REAL4 -1.0, -1.2, -0.2, 1.0	; Camera position (negative)
-camPosN REAL4 1.0, 0.2				; Camera negative position (positive)
-camPosL REAL4 -1.0, -1.2, -0.2		; Lerped camera position
-camPosNext REAL4 -1.0, -1.2, -0.2	; Next camera position, for collision
+camPos REAL4 -0.6, -1.2, -1.0, 1.0	; Camera position (negative)
+camPosN REAL4 0.0, 0.0				; Camera negative position (positive)
+camPosL REAL4 -0.0, -1.2, -0.0		; Lerped camera position
+camPosNext REAL4 -0.0, -1.2, -0.0	; Next camera position, for collision
 camStranglePos REAL4 0.0, 0.0		; Position to return to after strangling
 camRight REAL4 0.0, 0.0, 0.0		; Camera right vector
-camRot REAL4 0.0, 3.14, 0.0			; Camera rotation, in radians
+camRot REAL4 -0.5, -3.1, 0.0		; Camera rotation, in radians
 camRotL REAL4 0.0, 3.14, 0.0		; Lerped camera rotation
 camStep REAL4 0.0					; Value for animating walking
+camStepSide REAL4 0.0				; Side step animation
 camTurnSpeed REAL4 0.3				; Mouse sensitivity
 
 lastStepSnd DWORD 0		; Last step sound index, to not repeat it
@@ -333,10 +384,10 @@ ccTimer REAL4 -1.0	; Subtitles timer
 ccText DWORD 0		; Subtitles text pointer	
 ccTextLast BYTE 255	; Last subtitles index, to not repeat it
 
-wmblyk DWORD 11				; Wmblyk's state
+wmblyk DWORD 0				; Wmblyk's state
 wmblykPos REAL4 1.0, 7.0	; Wmblyk's position
 wmblykDir REAL4 0.0			; Wmblyk's direction
-wmblykBlink REAL4 0.0		; Wmblyk's blink and general-purpose timer
+wmblykBlink REAL4 5.0		; Wmblyk's blink and general-purpose timer
 wmblykJumpscare REAL4 0.0	; Wmblyk's jumpscare value (used as alpha)
 wmblykWalkAnim REAL4 7.0	; Wmblyk's walk animation speed etc
 wmblykStrAnim REAL4 3.0		; Wmblyk's strangle animation speed etc
@@ -350,7 +401,7 @@ wmblykStealth REAL4 0.0		; Wmblyk's general-purpose stealth value etc
 wmblykStealthy BYTE 0		; Wmblyk's stealth state
 
 kubaleAppeared BYTE 0		; Boolean if Kubale ever appeared
-kubale DWORD 29				; Kubale state
+kubale DWORD 0				; Kubale state
 kubaleDir REAL4 0.0			; Kubale direction
 kubalePos REAL4 3.0, 3.0	; The act of transferring the Kubale
 kubaleSpeed REAL4 0.0, 0.0	; Kubale speed, for collision
@@ -366,12 +417,16 @@ delta2 REAL4 0.01		; deltaTime * 2
 delta10 REAL4 0.01		; deltaTime * 10
 
 fade REAL4 1.0			; Fade value, used as alpha
-fadeState BYTE 1		; Fade state, 0 = no fade, 1 = fade in, 2 = fade out
+fadeState BYTE 0		; Fade state, 0 = no fade, 1 = fade in, 2 = fade out
 fogDensity REAL4 0.5	; Exponential fog density value, set with fade
 vignetteRed REAL4 0.0	; Red vignette alpha
 
 Menu BYTE 0			; Menu state, 0 = no menu, 1 = pause, 2 = options
 Gamma REAL4 0.5		; Fake gamma / brightness multiplier
+
+Compass BYTE 0	; Compass state, 0 = none, 1 = in layer, 2 = in possession
+CompassPos REAL4 0.0, 0.0	; Compass item layer position
+CompassRot REAL4 0.0		; Compass arrow rotation
 
 Glyphs BYTE 7				; Available glyphs
 GlyphsInLayer BYTE 0		; Glyphs placed in layer
@@ -388,13 +443,22 @@ MazeSize DWORD 0	; Maze byte size
 MazeSizeM1 DWORD 0	; Maze - (1, 1) byte size
 MazeDoor REAL4 0.0			; Maze end door value, used for rotating
 MazeDoorPos REAL4 0.0, 0.0	; Maze end door cell center position in REAL4
-MazeLocked BYTE 1	; Locked layer, 0 = not locked, 1 = locked, 2 = unlocked
+MazeGlyphs BYTE 0			; Maze glyphs item
+MazeGlyphsPos REAL4 0.0, 0.0; Glyphs item position in layer
+MazeGlyphsRot REAL4 0.0		; Glyphs item rotation
+MazeLocked BYTE 0	; Locked layer, 0 = not locked, 1 = locked, 2 = unlocked
 MazeKeyPos REAL4 0.0, 0.0	; Key position
 MazeKeyRot REAL4 0.0, 0.0	; Key rotation
+MazeHostile BYTE 1			; Used with intro
+MazeSiren REAL4 0.0			; Siren gain etc (intro)
+MazeSirenTimer REAL4 51.0	; Siren timer (intro)
+MazeTeleport BYTE 0
+MazeTeleportPos REAL4 0.0, 0.0, 0.0, 0.0
+MazeTeleportRot REAL4 0.0
 
 MazeLevel DWORD 0	; Current maze layer
 
-MazeDrawCull DWORD 4	; The 'radius', in cells, to draw
+MazeDrawCull DWORD 5	; The 'radius', in cells, to draw
 
 IniReturn DB "........", 0	; Ini return dummy string
 IniPathAbs DB 256 DUP (0)	; Absolute path to ini file
@@ -418,10 +482,14 @@ MazeLevelStr DWORD ?; String, containing the layer number
 
 
 TexBricks DWORD ?	; Textures
+TexCompass DWORD ?
+TexCompassWorld DWORD ?
 TexCursor DWORD ?
 TexDoor DWORD ?
 TexDoorblur DWORD ?
+TexFacade DWORD ?
 TexFloor DWORD ?
+TexGlyphs DWORD ?
 TexKey DWORD ?
 TexLamp DWORD ?
 TexMetal DWORD ?
@@ -429,9 +497,12 @@ TexMetalFloor DWORD ?
 TexMetalRoof DWORD ?
 TexNoise DWORD ?
 TexPipe DWORD ?
+TexRain DWORD ?
 TexRoof DWORD ?
 TexShadow DWORD ?
+TexTaburetka DWORD ?
 TexTilefloor DWORD ?
+TexTree DWORD ?
 TexVignette DWORD ?
 TexVignetteRed DWORD ?
 TexWall DWORD ?
@@ -459,6 +530,9 @@ SndAmb DWORD ?	; Sounds
 SndDeath DWORD ?
 SndDrip DWORD ?
 SndExit DWORD ?
+SndExplosion DWORD ?
+SndImpact DWORD ?
+SndIntro DWORD ?
 SndStep DWORD ?, ?, ?, ?
 SndKey DWORD ?
 SndKubale DWORD ?
@@ -466,6 +540,7 @@ SndKubaleAppear DWORD ?
 SndKubaleV DWORD ?
 SndMistake DWORD ?
 SndScribble DWORD ?
+SndSiren DWORD ?
 SndWhisper DWORD ?
 SndWmblyk DWORD ?
 SndWmblykB DWORD ?
@@ -495,6 +570,7 @@ Render PROTO
 RenderUI PROTO
 SetFullscreen PROTO :BYTE
 SetMazeLevelStr PROTO :DWORD
+Shake PROTO :REAL4
 ShowHideCursor PROTO :BYTE
 ShowSubtitles PROTO :DWORD
 
@@ -559,6 +635,11 @@ Control PROC
 	fadd camStep
 	fstp camStep
 	
+	fld curSpeed
+	fmul flStep
+	fadd camStepSide
+	fstp camStepSide
+	
 	fcmp camStep, PI	; Loop camStep and play random step sound
 	.IF !Sign? && !Zero?
 		fld PI
@@ -571,6 +652,12 @@ Control PROC
 		mul ecx
 		mov lastStepSnd, eax
 		invoke alSourcePlay, SndStep[eax]
+	.ENDIF
+	fcmp camStepSide, PI2	; Loop camStep and play random step sound
+	.IF !Sign? && !Zero?
+		fld PI2
+		fsubr camStepSide
+		fstp camStepSide
 	.ENDIF
 	ret
 Control ENDP
@@ -629,17 +716,39 @@ CreateModels PROC
 	invoke LoadGCM, ADDR MdlDoorFrameLock,	33
 	invoke LoadGCM, ADDR MdlPadlock,		34
 	invoke LoadGCM, ADDR MdlKey,			35
+	invoke LoadGCM, ADDR MdlGlyphs,			36
+	invoke LoadGCM, ADDR MdlWires,			37
+	invoke LoadGCM, ADDR MdlCompassWorld,	38
+	invoke LoadGCM, ADDR MdlCompassArrow,	39
+	invoke LoadGCM, ADDR MdlCityConcrete,	40
+	invoke LoadGCM, ADDR MdlCityFacade,		41
+	invoke LoadGCM, ADDR MdlCityTerrain,	42
+	invoke LoadGCM, ADDR MdlOutsRoad,		43
+	invoke LoadGCM, ADDR MdlOutsTerrain,	44
+	invoke LoadGCM, ADDR MdlOutsTrees,		45
+	invoke LoadGCM, ADDR MdlOutsBunker,		46
+	invoke LoadGCM, ADDR MdlSigil1,			47
+	invoke LoadGCM, ADDR MdlSigil2,			48
+	invoke LoadGCM, ADDR MdlTaburetka,		49
 	
 	invoke LoadTexture, ADDR ImgBricks, IMG_GCT
 	mov TexBricks, eax
+	invoke LoadTexture, ADDR ImgCompass, IMG_GCT5A1
+	mov TexCompass, eax
+	invoke LoadTexture, ADDR ImgCompassWorld, IMG_GCT5A1
+	mov TexCompassWorld, eax
 	invoke LoadTexture, ADDR ImgCursor, IMG_GCT332
 	mov TexCursor, eax
 	invoke LoadTexture, ADDR ImgDoor, IMG_GCT
 	mov TexDoor, eax
 	invoke LoadTexture, ADDR ImgDoorblur, IMG_GCT
 	mov TexDoorblur, eax
+	invoke LoadTexture, ADDR ImgFacade, IMG_GCT
+	mov TexFacade, eax
 	invoke LoadTexture, ADDR ImgFloor, IMG_GCT
 	mov TexFloor, eax
+	invoke LoadTexture, ADDR ImgGlyphs, IMG_GCT
+	mov TexGlyphs, eax
 	
 	invoke LoadTexture, ADDR ImgKey, IMG_GCT5A1 or IMG_HALFX
 	mov TexKey, eax
@@ -656,12 +765,18 @@ CreateModels PROC
 	mov TexNoise, eax
 	invoke LoadTexture, ADDR ImgPipe, IMG_GCT
 	mov TexPipe, eax
+	invoke LoadTexture, ADDR ImgRain, IMG_GCT
+	mov TexRain, eax
 	invoke LoadTexture, ADDR ImgRoof, IMG_GCT
 	mov TexRoof, eax
 	invoke LoadTexture, ADDR ImgShadow, IMG_GCT
 	mov TexShadow, eax
+	invoke LoadTexture, ADDR ImgTaburetka, IMG_GCT
+	mov TexTaburetka, eax
 	invoke LoadTexture, ADDR ImgTilefloor, IMG_GCT
 	mov TexTilefloor, eax
+	invoke LoadTexture, ADDR ImgTree, IMG_GCT5A1
+	mov TexTree, eax
 	invoke LoadTexture, ADDR ImgVignette, IMG_GCT or IMG_HALFY
 	mov TexVignette, eax
 	invoke glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR
@@ -820,6 +935,7 @@ CreateWindow ENDP
 
 ; Operate menu
 DoMenu PROC
+	LOCAL AudSt:SDWORD
 	.IF (Menu == 0)
 		inc Menu
 		mov canControl, 0
@@ -827,13 +943,123 @@ DoMenu PROC
 		mov camCurSpeed[8], 0
 		mov focused, 0
 		invoke ShowHideCursor, 1
+		
+		invoke alGetSourcei, SndAmb, AL_SOURCE_STATE, ADDR AudSt
+		.IF (AudSt == AL_PLAYING)
+			invoke alSourcePause, SndAmb
+		.ENDIF
+		invoke alGetSourcei, SndDrip, AL_SOURCE_STATE, ADDR AudSt
+		.IF (AudSt == AL_PLAYING)
+			invoke alSourcePause, SndDrip
+		.ENDIF
+		invoke alGetSourcei, SndExit, AL_SOURCE_STATE, ADDR AudSt
+		.IF (AudSt == AL_PLAYING)
+			invoke alSourcePause, SndExit
+		.ENDIF
+		invoke alGetSourcei, SndIntro, AL_SOURCE_STATE, ADDR AudSt
+		.IF (AudSt == AL_PLAYING)
+			invoke alSourcePause, SndIntro
+		.ENDIF
+		invoke alGetSourcei, SndKubale, AL_SOURCE_STATE, ADDR AudSt
+		.IF (AudSt == AL_PLAYING)
+			invoke alSourcePause, SndKubale
+		.ENDIF
+		invoke alGetSourcei, SndKubaleAppear, AL_SOURCE_STATE, ADDR AudSt
+		.IF (AudSt == AL_PLAYING)
+			invoke alSourcePause, SndKubaleAppear
+		.ENDIF
+		invoke alGetSourcei, SndKubaleV, AL_SOURCE_STATE, ADDR AudSt
+		.IF (AudSt == AL_PLAYING)
+			invoke alSourcePause, SndKubaleV
+		.ENDIF
+		invoke alGetSourcei, SndSiren, AL_SOURCE_STATE, ADDR AudSt
+		.IF (AudSt == AL_PLAYING)
+			invoke alSourcePause, SndSiren
+		.ENDIF
+		invoke alGetSourcei, SndWhisper, AL_SOURCE_STATE, ADDR AudSt
+		.IF (AudSt == AL_PLAYING)
+			invoke alSourcePause, SndWhisper
+		.ENDIF
+		invoke alGetSourcei, SndWmblyk, AL_SOURCE_STATE, ADDR AudSt
+		.IF (AudSt == AL_PLAYING)
+			invoke alSourcePause, SndWmblyk
+		.ENDIF
+		invoke alGetSourcei, SndWmblykB, AL_SOURCE_STATE, ADDR AudSt
+		.IF (AudSt == AL_PLAYING)
+			invoke alSourcePause, SndWmblykB
+		.ENDIF
+		invoke alGetSourcei, SndWmblykStr, AL_SOURCE_STATE, ADDR AudSt
+		.IF (AudSt == AL_PLAYING)
+			invoke alSourcePause, SndWmblykStr
+		.ENDIF
+		invoke alGetSourcei, SndWmblykStrM, AL_SOURCE_STATE, ADDR AudSt
+		.IF (AudSt == AL_PLAYING)
+			invoke alSourcePause, SndWmblykStrM
+		.ENDIF
 		ret
 	.ELSE
 		dec Menu
 		.IF (Menu == 0)
-			mov canControl, 1
+			.IF (playerState == 0)
+				mov canControl, 1
+			.ENDIF
 			mov focused, 1
 			invoke ShowHideCursor, 0
+			
+			invoke alSourcePlay, SndAmb
+			
+			invoke alGetSourcei, SndAmb, AL_SOURCE_STATE, ADDR AudSt
+			.IF (AudSt == AL_PAUSED)
+				invoke alSourcePlay, SndAmb
+			.ENDIF
+			invoke alGetSourcei, SndDrip, AL_SOURCE_STATE, ADDR AudSt
+			.IF (AudSt == AL_PAUSED)
+				invoke alSourcePlay, SndDrip
+			.ENDIF
+			invoke alGetSourcei, SndExit, AL_SOURCE_STATE, ADDR AudSt
+			.IF (AudSt == AL_PAUSED)
+				invoke alSourcePlay, SndExit
+			.ENDIF
+			invoke alGetSourcei, SndIntro, AL_SOURCE_STATE, ADDR AudSt
+			.IF (AudSt == AL_PAUSED)
+				invoke alSourcePlay, SndIntro
+			.ENDIF
+			invoke alGetSourcei, SndKubale, AL_SOURCE_STATE, ADDR AudSt
+			.IF (AudSt == AL_PAUSED)
+				invoke alSourcePlay, SndKubale
+			.ENDIF
+			invoke alGetSourcei, SndKubaleAppear, AL_SOURCE_STATE, ADDR AudSt
+			.IF (AudSt == AL_PAUSED)
+				invoke alSourcePlay, SndKubaleAppear
+			.ENDIF
+			invoke alGetSourcei, SndKubaleV, AL_SOURCE_STATE, ADDR AudSt
+			.IF (AudSt == AL_PAUSED)
+				invoke alSourcePlay, SndKubaleV
+			.ENDIF
+			invoke alGetSourcei, SndSiren, AL_SOURCE_STATE, ADDR AudSt
+			.IF (AudSt == AL_PAUSED)
+				invoke alSourcePlay, SndSiren
+			.ENDIF
+			invoke alGetSourcei, SndWhisper, AL_SOURCE_STATE, ADDR AudSt
+			.IF (AudSt == AL_PAUSED)
+				invoke alSourcePlay, SndWhisper
+			.ENDIF
+			invoke alGetSourcei, SndWmblyk, AL_SOURCE_STATE, ADDR AudSt
+			.IF (AudSt == AL_PAUSED)
+				invoke alSourcePlay, SndWmblyk
+			.ENDIF
+			invoke alGetSourcei, SndWmblykB, AL_SOURCE_STATE, ADDR AudSt
+			.IF (AudSt == AL_PAUSED)
+				invoke alSourcePlay, SndWmblykB
+			.ENDIF
+			invoke alGetSourcei, SndWmblykStr, AL_SOURCE_STATE, ADDR AudSt
+			.IF (AudSt == AL_PAUSED)
+				invoke alSourcePlay, SndWmblykStr
+			.ENDIF
+			invoke alGetSourcei, SndWmblykStrM, AL_SOURCE_STATE, ADDR AudSt
+			.IF (AudSt == AL_PAUSED)
+				invoke alSourcePlay, SndWmblykStrM
+			.ENDIF
 		.ENDIF
 		ret
 	.ENDIF
@@ -855,6 +1081,9 @@ DoPlayerState PROC
 		mov camPosL, 3212836864
 		mov camPosL[8], 3192704205
 		
+		mov camStep, 0
+		mov camStepSide, 0
+				
 		mov MazeDoor, 0
 		
 		m2m fade, fl1
@@ -1090,6 +1319,83 @@ DoPlayerState PROC
 		invoke alGetSourcef, SndWmblykStrM, AL_GAIN, ADDR mtplr
 		invoke Lerp, ADDR mtplr, 0, deltaTime
 		invoke alSourcef, SndWmblykStrM, AL_GAIN, mtplr
+	.ELSEIF (playerState == 11) || (playerState == 13) || (playerState == 15) \
+	|| (playerState == 17)	; Intro black, abysmal code choises
+		mov fade, 0
+		m2m fogDensity, flTenth
+		fcmp wmblykBlink
+		.IF Sign?
+			.IF (playerState == 17)
+				invoke GenerateMaze
+				mov MazeHostile, 0
+				mov playerState, 1
+				invoke alSourcePlay, SndSiren
+				ret
+			.ENDIF
+			inc playerState
+			m2m wmblykBlink, fl4
+		.ENDIF
+	.ELSEIF (playerState == 12) ; Intro looks around city
+		fld deltaTime
+		fmul flFifth
+		fst mtplr
+		invoke LerpAngle, ADDR camRot[4], 1077936128, deltaTime
+		fmul flHalf
+		fstp mtplr
+		invoke Lerp, ADDR camRot, 3206125978, mtplr
+		
+		invoke Lerp, ADDR fogDensity, flHalf, mtplr
+		
+		fcmp wmblykBlink
+		.IF Sign?
+			inc playerState
+			m2m wmblykBlink, fl4
+			mov camRot, 0
+			m2m camRot[4], PI
+		.ENDIF
+	.ELSEIF (playerState == 14)	; Intro runs through the outskirts
+		fld deltaTime
+		fmul fl6
+		fsubr camPos[8]
+		fstp camPos[8]
+		fld delta2
+		fmul fl5
+		fadd camStep
+		fst camStep
+		fstp camStepSide
+		
+		invoke Lerp, ADDR fogDensity, flTenth, deltaTime
+		
+		fcmp wmblykBlink
+		.IF Sign?
+			inc playerState
+			m2m wmblykBlink, fl4
+			m2m fogDensity, flHalf
+			m2m camPos[8], 3246391296
+		.ENDIF
+	.ELSEIF (playerState == 16)	; Intro runs through the woods, towards Maze
+		fld deltaTime
+		fmul fl6
+		fsubr camPos[8]
+		fstp camPos[8]
+		fld delta2
+		fmul fl5
+		fadd camStep
+		fst camStep
+		fstp camStepSide
+		
+		invoke Lerp, ADDR fogDensity, flTenth, deltaTime
+		fcmp wmblykBlink
+		.IF Sign?
+			inc playerState
+			m2m wmblykBlink, fl5
+		.ENDIF
+	.ENDIF
+	
+	.IF (playerState >= 11) && (playerState <= 17)	; Intro timer
+		fld wmblykBlink
+		fsub deltaTime
+		fstp wmblykBlink
 	.ENDIF
 	ret
 DoPlayerState ENDP
@@ -1134,7 +1440,6 @@ DrawFloorRoofEnd ENDP
 ; Draw wall and check collision (fr ong gotta make it better)
 DrawWall PROC List:DWORD, PosX:REAL4, PosY:REAL4, Vertical:BYTE
 	LOCAL BndX1: REAL4, BndX2: REAL4, BndY1: REAL4, BndY2: REAL4
-	
 	; Draw stuff
 	invoke glCallList, List
 	.IF (!canControl)
@@ -1333,6 +1638,22 @@ DrawMaze PROC
 			invoke glCallList, 28
 		.ENDIF
 		
+		mov eax, MazeBuffer
+		mov cl, BYTE PTR [eax+ebx]
+		and cl, MZC_WIRES
+		.IF (cl != 0)
+			invoke glBindTexture, GL_TEXTURE_2D, TexLamp
+			invoke glCallList, 37
+		.ENDIF
+		
+		mov eax, MazeBuffer
+		mov cl, BYTE PTR [eax+ebx]
+		and cl, MZC_TABURETKA
+		.IF (cl != 0)
+			invoke glBindTexture, GL_TEXTURE_2D, TexTaburetka
+			invoke glCallList, 49
+		.ENDIF
+		
 		.IF (Rotate != 0)
 			invoke glRotatef, 1119092736, 0, fl1, 0
 		.ENDIF
@@ -1409,6 +1730,323 @@ DrawMaze PROC
 	.ENDW
 	ret
 DrawMaze ENDP
+
+; Draw items in the maze like the key, glyphs etc
+DrawMazeItems PROC
+	LOCAL rotVal:REAL4
+	
+	.IF (MazeLocked == 1)	; Key
+		invoke nrandom, 100
+		.IF (eax == 0)
+			invoke nrandom, 360
+			mov MazeKeyRot[4], eax
+			fild MazeKeyRot[4]
+			fstp MazeKeyRot[4]
+		.ENDIF
+		fld deltaTime
+		fmul flTenth
+		fstp rotVal
+		invoke Lerp, ADDR MazeKeyRot, MazeKeyRot[4], rotVal
+		invoke glPushMatrix
+			invoke glEnable, GL_LIGHTING
+			invoke glEnable, GL_FOG
+			invoke glEnable, GL_BLEND
+			invoke glBlendFunc, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA
+			invoke glBindTexture, GL_TEXTURE_2D, TexKey
+			invoke glTranslatef, MazeKeyPos, 0, MazeKeyPos[4]
+			invoke glRotatef, MazeKeyRot, 0, fl1, 0
+			invoke glCallList, 35
+			invoke glDisable, GL_BLEND
+		invoke glPopMatrix
+		invoke DistanceToSqr, camPosN, camPosN[4], MazeKeyPos, MazeKeyPos[4]
+		mov rotVal, eax
+		fcmp rotVal, fl1
+		.IF Sign?
+			mov MazeLocked, 2
+			invoke ShowSubtitles, ADDR CCKey
+			invoke alSource3f, SndKey, AL_POSITION, \
+			MazeKeyPos, fl1, MazeKeyPos[4]
+			invoke alSourcePlay, SndKey
+		.ENDIF
+	.ENDIF
+	
+	.IF (Compass == 1)
+		invoke glPushMatrix
+			invoke glEnable, GL_LIGHTING
+			invoke glEnable, GL_FOG
+			invoke glBindTexture, GL_TEXTURE_2D, TexCompassWorld
+			invoke glTranslatef, CompassPos, 0, CompassPos[4]
+			invoke glCallList, 38
+		invoke glPopMatrix
+		invoke DistanceToSqr, camPosN, camPosN[4], CompassPos, CompassPos[4]
+		mov rotVal, eax
+		fcmp rotVal, fl1
+		.IF Sign?
+			mov Compass, 2
+			invoke ShowSubtitles, ADDR CCCompass
+			invoke alSourcePlay, SndMistake
+		.ENDIF
+	.ELSEIF (Compass == 2) && (playerState == 0)
+		fcmp camRot, flHalf
+		.IF !Sign?
+			invoke glPushMatrix
+				invoke glDisable, GL_LIGHTING
+				invoke glDisable, GL_FOG
+				invoke glEnable, GL_BLEND
+				invoke glBlendFunc, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA
+				invoke glBindTexture, GL_TEXTURE_2D, TexCompass
+				invoke glTranslatef, camPosN, flHalf, camPosN[4]
+				fld camRot[4]
+				fmul R2D
+				fstp rotVal
+				invoke glRotatef, rotVal, 0, fl1, 0
+				invoke glRotatef, fl90, fl1, 0, 0
+				invoke glTranslatef, 3190422503, 3190422503, 0
+				invoke glScalef, flThird, flThird, flThird
+				invoke glCallList, 3
+			invoke glPopMatrix
+			invoke glPushMatrix
+				invoke glTranslatef, camPosN, 1057803469, camPosN[4]
+				.IF (MazeLocked == 1)
+					invoke GetDirection, MazeKeyPos, MazeKeyPos[4], camPosN, camPosN[4]
+					mov rotVal, eax
+				.ELSE
+					invoke GetDirection, camPos, camPos[8], MazeDoorPos, MazeDoorPos[4]
+					mov rotVal, eax
+				.ENDIF
+				fld rotVal
+				fsubr camRot[4]
+				fstp rotVal
+				invoke Angleify, ADDR rotVal
+				invoke Angleify, ADDR CompassRot
+				invoke LerpAngle, ADDR CompassRot, rotVal, delta2
+				fld camRot[4]
+				fsub CompassRot
+				fmul R2D
+				fstp rotVal
+				invoke glRotatef, rotVal, 0, fl1, 0
+				invoke glBindTexture, GL_TEXTURE_2D, TexCompassWorld
+				invoke glCallList, 39
+			invoke glPopMatrix
+		.ENDIF
+	.ENDIF
+	
+	.IF (MazeGlyphs)	; Glyphs
+		fld MazeGlyphsRot
+		fadd deltaTime
+		fst MazeGlyphsRot
+		fsin
+		fmul flFifth
+		fstp rotVal
+		
+		invoke Angleify, ADDR MazeGlyphsRot
+		
+		invoke glPushMatrix
+			invoke glDisable, GL_LIGHTING
+			invoke glEnable, GL_FOG
+			invoke glDisable, GL_BLEND
+			invoke glBindTexture, GL_TEXTURE_2D, TexGlyphs
+			invoke glTranslatef, MazeGlyphsPos, rotVal, MazeGlyphsPos[4]
+			fld MazeGlyphsRot
+			fmul R2D
+			fstp rotVal
+			invoke glRotatef, rotVal, 0, fl1, 0
+			invoke glCallList, 36
+		invoke glPopMatrix
+		invoke DistanceToSqr, camPosN, camPosN[4], MazeGlyphsPos, MazeGlyphsPos[4]
+		mov rotVal, eax
+		fcmp rotVal, fl1
+		.IF Sign?
+			mov MazeGlyphs, 0
+			invoke ShowSubtitles, ADDR CCGlyphRestore
+			invoke alSourcePlay, SndMistake
+			mov Glyphs, 7
+			mov GlyphOffset, 0
+			mov GlyphsInLayer, 0
+		.ENDIF
+	.ENDIF
+	
+	.IF (MazeTeleport)	; Teleporters
+		fld MazeTeleportRot
+		fadd delta10
+		fstp MazeTeleportRot
+		
+		fcmp MazeTeleportRot, fl360
+		.IF !Sign?
+			fld MazeTeleportRot
+			fsub fl360
+			fstp MazeTeleportRot
+		.ENDIF
+	
+		invoke glPushMatrix
+			invoke glDisable, GL_LIGHTING
+			invoke glEnable, GL_FOG
+			invoke glDisable, GL_BLEND
+			invoke glBindTexture, GL_TEXTURE_2D, 0
+			invoke glTranslatef, MazeTeleportPos, 0, MazeTeleportPos[4]
+			invoke glRotatef, MazeTeleportRot, 0, fl1, 0
+			invoke glCallList, 47
+			fld MazeTeleportRot
+			fchs
+			fstp rotVal
+			invoke glRotatef, rotVal, 0, fl1, 0
+			invoke glRotatef, rotVal, 0, fl1, 0
+			invoke glCallList, 48
+			
+			invoke DistanceToSqr, camPosN, camPosN[4], MazeTeleportPos, MazeTeleportPos[4]
+			mov rotVal, eax
+			fcmp rotVal, flHalf
+			.IF Sign?
+				mov canControl, 0
+				mov playerState, 18
+				mov fadeState, 2
+				invoke Lerp, ADDR camPosN, MazeTeleportPos, deltaTime
+				fld camPosN
+				fchs
+				fstp camPos
+				invoke Lerp, ADDR camPosN[4], MazeTeleportPos[4], deltaTime
+				fld camPosN[4]
+				fchs
+				fstp camPos[8]
+				mov camCurSpeed, 0
+				mov camCurSpeed[8], 0
+				
+				fcmp fade, fl1
+				.IF !Sign?
+					invoke ShowSubtitles, ADDR CCTeleport
+					invoke alSourcePlay, SndMistake
+					print "Teleported player", 13, 10
+					fld MazeTeleportPos[8]
+					fchs
+					fst camPos
+					fst camPosNext
+					fstp camPosL
+					fld MazeTeleportPos[12]
+					fchs
+					fst camPos[8]
+					fst camPosNext[8]
+					fstp camPosL[8]
+					mov fadeState, 1
+					mov MazeTeleport, 0
+					mov canControl, 1
+					mov playerState, 0
+				.ENDIF
+			.ENDIF
+		invoke glPopMatrix
+		invoke glPushMatrix
+			invoke glDisable, GL_LIGHTING
+			invoke glEnable, GL_FOG
+			invoke glDisable, GL_BLEND
+			invoke glBindTexture, GL_TEXTURE_2D, 0
+			invoke glTranslatef, MazeTeleportPos[8], 0, MazeTeleportPos[12]
+			invoke glRotatef, MazeTeleportRot, 0, fl1, 0
+			invoke glCallList, 47
+			fld MazeTeleportRot
+			fchs
+			fstp rotVal
+			invoke glRotatef, rotVal, 0, fl1, 0
+			invoke glRotatef, rotVal, 0, fl1, 0
+			invoke glCallList, 48
+			
+			invoke DistanceToSqr, camPosN, camPosN[4], MazeTeleportPos[8], MazeTeleportPos[12]
+			mov rotVal, eax
+			fcmp rotVal, flHalf
+			.IF Sign?
+				mov canControl, 0
+				mov playerState, 18
+				mov fadeState, 2
+				invoke Lerp, ADDR camPosN, MazeTeleportPos[8], deltaTime
+				fld camPosN
+				fchs
+				fstp camPos
+				invoke Lerp, ADDR camPosN[4], MazeTeleportPos[12], deltaTime
+				fld camPosN[4]
+				fchs
+				fstp camPos[8]
+				mov camCurSpeed, 0
+				mov camCurSpeed[8], 0
+				
+				fcmp fade, fl1
+				.IF !Sign?
+					invoke ShowSubtitles, ADDR CCTeleport
+					invoke alSourcePlay, SndMistake
+					print "Teleported player", 13, 10
+					fld MazeTeleportPos
+					fchs
+					fst camPos
+					fst camPosNext
+					fstp camPosL
+					fld MazeTeleportPos[4]
+					fchs
+					fst camPos[8]
+					fst camPosNext[8]
+					fstp camPosL[8]
+					mov fadeState, 1
+					mov MazeTeleport, 0
+					mov canControl, 1
+					mov playerState, 0
+				.ENDIF
+			.ENDIF
+		invoke glPopMatrix
+	.ENDIF
+	ret
+DrawMazeItems ENDP
+
+; Draw UI noise, made a PROC for intro rain
+DrawNoise PROC Texture:DWORD
+	LOCAL screenWF: DWORD, screenHF: DWORD
+	LOCAL noiseX: DWORD, noiseY: DWORD
+	
+	invoke glLoadIdentity	; Draw noise
+	invoke glBindTexture, GL_TEXTURE_2D, Texture
+	
+	invoke nrandom, 512	; Random noise offset
+	mov noiseX, eax
+	invoke nrandom, 512
+	mov noiseY, eax
+	
+	fild noiseX
+	fchs
+	fstp screenWF
+	fild noiseY
+	fchs
+	fstp screenHF
+	invoke glTranslatef, screenWF, screenHF, 0
+	
+	invoke glScalef, 1140850688, 1140850688, 0
+	
+	mov eax, screenSize
+	mov ecx, 512
+	xor edx, edx
+	div ecx
+	inc eax
+	inc eax
+	mov noiseX, eax
+	mov eax, screenSize[4]
+	mov ecx, 512
+	xor edx, edx
+	div ecx
+	inc eax
+	inc eax
+	mov noiseY, eax
+	
+	xor ebx, ebx
+	.WHILE (ebx < noiseY)
+		push ebx
+		invoke glPushMatrix
+		xor ebx, ebx
+		.WHILE (ebx < noiseX)
+			invoke glCallList, 3
+			invoke glTranslatef, fl1, 0, 0
+			inc ebx
+		.ENDW
+		pop ebx
+		invoke glPopMatrix
+		invoke glTranslatef, 0, fl1, 0
+		inc ebx
+	.ENDW
+	ret
+DrawNoise ENDP
 
 ; Draw TextString text at (X, Y)
 DrawBitmapText PROC TextString:DWORD, X:REAL4, Y:REAL4, TextAlign:BYTE
@@ -2020,8 +2658,8 @@ DrawWmblykAngry PROC
 					mov eax, MazeBuffer
 					mov cl, BYTE PTR [eax+edx]; ECX = Maze[x, y+1]
 					and cl, MZC_PASSTOP
-					mov eax, MazeX
-					.IF (cl == 0) || (eax == MazeWM1)
+					mov eax, MazeY
+					.IF (cl == 0) || (eax == MazeHM1)
 						print "Bottom blocked", 13, 10
 						mov ChoosePath, 0
 						dec MazeY
@@ -2033,8 +2671,8 @@ DrawWmblykAngry PROC
 					mov eax, MazeBuffer
 					mov cl, BYTE PTR [eax+ebx]; ECX = Maze[x+1, y]
 					and cl, MZC_PASSLEFT
-					mov eax, MazeY
-					.IF (cl == 0) || (eax == MazeHM1)
+					mov eax, MazeX
+					.IF (cl == 0) || (eax == MazeWM1)
 						print "Right blocked", 13, 10
 						mov ChoosePath, 0
 						dec MazeX
@@ -2628,6 +3266,40 @@ GetWindowCenter PROC
 	ret
 GetWindowCenter ENDP
 
+; Get random position in maze (REAL4) for items
+GetRandomMazePosition PROC XPtr:DWORD, YPtr:DWORD
+	LOCAL XPos:DWORD, YPos:DWORD
+	
+	mov eax, MazeWM1
+	sub eax, 2	; don't want it near the end nor start
+	invoke nrandom, eax
+	inc eax
+	mov ebx, 2
+	mul ebx		; *2 = to world coords
+	inc eax		; center
+	mov XPos, eax
+	
+	mov eax, MazeHM1
+	sub eax, 2
+	invoke nrandom, eax
+	inc eax
+	mul ebx		; *2 = to world coords
+	inc eax		; center
+	mov YPos, eax
+	fild XPos
+	fstp XPos
+	fild YPos
+	fstp YPos
+	
+	mov eax, XPtr
+	mov ecx, XPos
+	mov REAL4 PTR [eax], ecx
+	mov eax, YPtr
+	mov ecx, YPos
+	mov REAL4 PTR [eax], ecx
+	ret
+GetRandomMazePosition ENDP
+
 ; mama help me
 GenerateMaze PROC
 	LOCAL PosX: DWORD, PosY: DWORD, PoolI: BYTE, StackCntr: DWORD
@@ -2637,42 +3309,44 @@ GenerateMaze PROC
 	invoke alSourceStop, SndWhisper
 	invoke alSourceStop, SndWmblykB
 	
-	invoke nrandom, 4	; Random environment
-	SWITCH eax
-		CASE 0
-			m2m CurrentWall, TexWall
-		CASE 1
-			m2m CurrentWall, TexMetal
-		CASE 2
-			m2m CurrentWall, TexWhitewall
-		CASE 3
-			m2m CurrentWall, TexBricks
-	ENDSW
-	invoke nrandom, 3
-	SWITCH eax
-		CASE 0
-			m2m CurrentWallMDL, 1
-		CASE 1
-			m2m CurrentWallMDL, 25
-		CASE 2
-			m2m CurrentWallMDL, 26
-	ENDSW
-	invoke nrandom, 2
-	SWITCH eax
-		CASE 0
-			m2m CurrentRoof, TexRoof
-		CASE 1
-			m2m CurrentRoof, TexMetalRoof
-	ENDSW
-	invoke nrandom, 3
-	SWITCH eax
-		CASE 0
-			m2m CurrentFloor, TexFloor
-		CASE 1
-			m2m CurrentFloor, TexMetalFloor
-		CASE 2
-			m2m CurrentFloor, TexTilefloor
-	ENDSW
+	.IF (MazeLevel > 0)
+		invoke nrandom, 4	; Random environment
+		SWITCH eax
+			CASE 0
+				m2m CurrentWall, TexWall
+			CASE 1
+				m2m CurrentWall, TexMetal
+			CASE 2
+				m2m CurrentWall, TexWhitewall
+			CASE 3
+				m2m CurrentWall, TexBricks
+		ENDSW
+		invoke nrandom, 3
+		SWITCH eax
+			CASE 0
+				m2m CurrentWallMDL, 1
+			CASE 1
+				m2m CurrentWallMDL, 25
+			CASE 2
+				m2m CurrentWallMDL, 26
+		ENDSW
+		invoke nrandom, 2
+		SWITCH eax
+			CASE 0
+				m2m CurrentRoof, TexRoof
+			CASE 1
+				m2m CurrentRoof, TexMetalRoof
+		ENDSW
+		invoke nrandom, 3
+		SWITCH eax
+			CASE 0
+				m2m CurrentFloor, TexFloor
+			CASE 1
+				m2m CurrentFloor, TexMetalFloor
+			CASE 2
+				m2m CurrentFloor, TexTilefloor
+		ENDSW
+	.ENDIF
 	
 	mov eax, MazeW
 	mul MazeH
@@ -2844,106 +3518,108 @@ GenerateMaze PROC
 					
 					mov MazeLocked, 0
 					
-					invoke nrandom, MazeLevel	; Spawn key
-					.IF (eax > 3)
-						print "Locking maze.", 13, 10
-						mov MazeLocked, 1
-						mov eax, MazeWM1
-						sub eax, 2	; don't want it near the end nor start
-						invoke nrandom, eax
-						inc eax
-						mov ebx, 2
-						mul ebx		; *2 = to world coords
-						inc eax		; center
-						mov PosX, eax
+					.IF (MazeHostile == 1)
+						invoke nrandom, MazeLevel	; Spawn key
+						.IF (eax > 7)
+							print "Locking maze.", 13, 10
+							mov MazeLocked, 1
+							invoke GetRandomMazePosition, ADDR MazeKeyPos, \
+							ADDR MazeKeyPos[4]
+						.ENDIF
 						
-						mov eax, MazeHM1
-						sub eax, 2
-						invoke nrandom, eax
-						inc eax
-						mul ebx		; *2 = to world coords
-						inc eax		; center
-						mov PosY, eax
-						fild PosX
-						fstp MazeKeyPos
-						fild PosY
-						fstp MazeKeyPos[4]
-					.ENDIF
-					
-					mov GlyphsInLayer, 0
-					mov al, Glyphs
-					sub al, 7
-					mov bl, -4
-					mul bl
-					mov GlyphOffset, al
-					
-					mov vignetteRed, 0
-					
-					mov wmblyk, 0
-					mov wmblykStealthy, 0
-					mov wmblykBlink, 0
-					.IF (MazeLevel > 2)
-						invoke nrandom, 2
-						.IF (eax == 0)
-							print "Spawned Wmblyk", 13, 10
-							mov wmblyk, 8
+						mov MazeGlyphs, 0
+						
+						.IF (Glyphs < 5)
+							invoke nrandom, 20	; Spawn glyphs
+							.IF (eax == 0) || (Glyphs == 0)
+								print "Spawned glyphs.", 13, 10
+								mov MazeGlyphs, 1
+								invoke GetRandomMazePosition, \
+								ADDR MazeGlyphsPos, ADDR MazeGlyphsPos[4]
+							.ENDIF
+						.ENDIF
+						
+						mov GlyphsInLayer, 0
+						mov al, Glyphs
+						sub al, 7
+						mov bl, -4
+						mul bl
+						mov GlyphOffset, al
+						
+						.IF (Compass != 2) && (MazeLevel > 11)
+							mov Compass, 0
 							invoke nrandom, 2
 							.IF (eax == 0)
-								invoke MakeWmblykStealthy
+								print "Spawned compass.", 13, 10
+								mov Compass, 1
+								invoke GetRandomMazePosition, \
+								ADDR CompassPos, ADDR CompassPos[4]
 							.ENDIF
-							.IF (MazeLevel > 5)
+						.ENDIF
+						
+						mov vignetteRed, 0
+						
+						mov wmblyk, 0
+						mov wmblykStealthy, 0
+						mov wmblykBlink, 0
+						.IF (MazeLevel > 6)
+							invoke nrandom, 2
+							.IF (eax == 0)
+								invoke GetRandomMazePosition, \
+								ADDR wmblykPos, ADDR wmblykPos[4]
+								
+								print "Spawned Wmblyk", 13, 10
+								mov wmblyk, 8
 								invoke nrandom, 2
 								.IF (eax == 0)
-									mov wmblyk, 11
-									mov wmblykTurn, 0
-									invoke alSourcef, SndWmblykB, AL_GAIN, fl1
-									invoke alSourcePlay, SndWmblykB
-									print "Wmblyk is angry", 13, 10
+									invoke MakeWmblykStealthy
+								.ENDIF
+								.IF (MazeLevel > 9)
+									invoke nrandom, 2
+									.IF (eax == 0)
+										mov wmblyk, 11
+										mov wmblykTurn, 0
+										invoke alSourcef, SndWmblykB, AL_GAIN, fl1
+										invoke alSourcePlay, SndWmblykB
+										print "Wmblyk is angry", 13, 10
+									.ENDIF
 								.ENDIF
 							.ENDIF
-							mov eax, MazeWM1
-							dec eax
-							invoke nrandom, eax
-							inc eax
-							mov ebx, 2
-							mul ebx
-							inc eax
-							mov PosX, eax
-							
-							mov eax, MazeHM1
-							dec eax
-							invoke nrandom, eax
-							inc eax
-							mul ebx
-							inc eax
-							mov PosY, eax
-							fild PosX
-							fstp wmblykPos
-							fild PosY
-							fstp wmblykPos[4]
 						.ENDIF
-					.ENDIF
-					
-					mov kubale, 0
-					.IF (MazeLevel > 6)
-						invoke nrandom, 3
-						.IF (eax == 0)
-							print "Spawned Kubale", 13, 10
-							invoke nrandom, 10
-							.IF (eax == 0) || (kubaleAppeared == 0)
-								mov kubaleAppeared, 1
-								invoke nrandom, 6
-								add eax, 2
-								mov kubale, eax
-								fild kubale
-								fstp kubaleDir
-								mov kubale, 1
-							.ELSE
-								invoke MakeKubale
+						
+						mov kubale, 0
+						.IF (MazeLevel > 12)
+							invoke nrandom, 3
+							.IF (eax == 0)
+								print "Spawned Kubale", 13, 10
+								invoke nrandom, 10
+								.IF (eax == 0) || (kubaleAppeared == 0)
+									mov kubaleAppeared, 1
+									invoke nrandom, 6
+									add eax, 2
+									mov kubale, eax
+									fild kubale
+									fstp kubaleDir
+									mov kubale, 1
+								.ELSE
+									invoke MakeKubale
+								.ENDIF
+							.ENDIF
+						.ENDIF
+						
+						mov MazeTeleport, 0
+						.IF (MazeLevel > 10)
+							invoke nrandom, 3
+							.IF (eax == 0)
+								print "Spawned teleporters", 13, 10
+								mov MazeTeleport, 1
+								invoke GetRandomMazePosition, \
+								ADDR MazeTeleportPos, ADDR MazeTeleportPos[4]
+								invoke GetRandomMazePosition, \
+								ADDR MazeTeleportPos[8], ADDR MazeTeleportPos[12]
 							.ENDIF
 						.ENDIF
 					.ENDIF
-					
 					
 					invoke nrandom, 20
 					.IF (al == ccTextLast)
@@ -3044,6 +3720,20 @@ GenerateMaze PROC
 				mov eax, MazeBuffer
 				or BYTE PTR [eax+ebx], MZC_PIPE 
 			.ENDIF
+			invoke nrandom, 29
+			.IF (eax == 0)
+				mov eax, MazeBuffer
+				or BYTE PTR [eax+ebx], MZC_WIRES 
+			.ENDIF
+			
+			invoke nrandom, 33
+			.IF (MazeLevel == 0) && (PosX == 1) && (PosY == 0)
+				xor eax, eax
+			.ENDIF
+			.IF (eax == 0)
+				mov eax, MazeBuffer
+				or BYTE PTR [eax+ebx], MZC_TABURETKA
+			.ENDIF
 			invoke nrandom, 2
 			.IF (eax == 1)
 				mov eax, MazeBuffer
@@ -3091,6 +3781,9 @@ InitAudio PROC
 	invoke LoadAudio, ADDR SndDeathPath, ADDR SndDeath
 	invoke LoadAudio, ADDR SndDripPath, ADDR SndDrip
 	invoke LoadAudio, ADDR SndExitPath, ADDR SndExit
+	invoke LoadAudio, ADDR SndExplosionPath, ADDR SndExplosion
+	invoke LoadAudio, ADDR SndImpactPath, ADDR SndImpact
+	invoke LoadAudio, ADDR SndIntroPath, ADDR SndIntro
 	invoke LoadAudio, ADDR SndStep1, ADDR SndStep
 	invoke LoadAudio, ADDR SndStep2, ADDR SndStep[4]
 	invoke LoadAudio, ADDR SndStep3, ADDR SndStep[8]
@@ -3101,6 +3794,7 @@ InitAudio PROC
 	invoke LoadAudio, ADDR SndKubaleVPath, ADDR SndKubaleV
 	invoke LoadAudio, ADDR SndMistakePath, ADDR SndMistake
 	invoke LoadAudio, ADDR SndScribblePath, ADDR SndScribble
+	invoke LoadAudio, ADDR SndSirenPath, ADDR SndSiren
 	invoke LoadAudio, ADDR SndWhisperPath, ADDR SndWhisper
 	invoke LoadAudio, ADDR SndWmblykPath, ADDR SndWmblyk
 	invoke LoadAudio, ADDR SndWmblykBPath, ADDR SndWmblykB
@@ -3117,6 +3811,8 @@ InitAudio PROC
 	invoke alSourcef, SndKubaleAppear, AL_ROLLOFF_FACTOR, fl2
 	invoke alSourcei, SndKubaleV, AL_LOOPING, AL_TRUE
 	invoke alSourcef, SndKubaleV, AL_GAIN, 0
+	invoke alSourcei, SndSiren, AL_LOOPING, AL_TRUE
+	invoke alSourcef, SndSiren, AL_GAIN, 0
 	invoke alSourcei, SndWhisper, AL_LOOPING, AL_TRUE
 	invoke alSourcef, SndWhisper, AL_ROLLOFF_FACTOR, fl2
 	invoke alSourcei, SndWmblykStrM, AL_LOOPING, AL_TRUE
@@ -3125,7 +3821,7 @@ InitAudio PROC
 	invoke alGetError
 	print str$(eax), 13, 10
 	
-	invoke alSourcePlay, SndAmb
+	invoke alSourcePlay, SndIntro
 	
 	invoke alSourcePlay, SndKubale
 	invoke alSourcePlay, SndKubaleV
@@ -3182,6 +3878,7 @@ InitContext PROC WindowHandle:DWORD
 	invoke glEnable, GL_CULL_FACE
 	invoke glShadeModel, GL_SMOOTH
 	invoke glEnable, GL_DEPTH_TEST
+	invoke glDepthFunc, GL_LEQUAL
 	
 	invoke glEnable, GL_LIGHTING
 	invoke glEnable, GL_LIGHT0
@@ -3220,6 +3917,14 @@ KeyPress PROC Key:DWORD, State:BYTE
 		mov keyRight, al
 		ret
 	.ELSEIF Key == 27
+		.IF (playerState >= 11) && (playerState <= 17)
+			invoke GenerateMaze
+			mov MazeHostile, 0
+			mov playerState, 1
+			invoke alSourceStop, SndIntro
+			invoke alSourcePlay, SndSiren
+			ret
+		.ENDIF
 		.IF (State == 1)
 			invoke DoMenu
 		.ENDIF
@@ -3309,12 +4014,23 @@ KeyPress PROC Key:DWORD, State:BYTE
 			invoke alSourcePlay, SndWmblykB
 		.ENDIF
 		ret
+	.ELSEIF Key == 67
+		.IF (State == 0)
+			mov MazeLocked, 2
+		.ENDIF
+		ret
+	.ELSEIF Key == 73
+		.IF (State == 0)
+			invoke alSourceStop, SndSiren
+			invoke alSourcePlay, SndAmb
+			mov MazeHostile, 1
+		.ENDIF
+		ret
 	.ELSEIF Key == 90
 		.IF (State == 0)
 			inc MazeLevel
 			print str$(MazeLevel), 13, 10
 		.ENDIF
-		ret
 	.ENDIF
 	
 	ret
@@ -3407,8 +4123,6 @@ Render PROC
 		invoke SetCursorPos, winCX, winCY
 	.ENDIF
 	
-	invoke DoPlayerState	; Cutscenes, etc
-	
 	invoke glClear, GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT
 	
 	invoke glMatrixMode, GL_PROJECTION
@@ -3418,12 +4132,90 @@ Render PROC
 	DWORD PTR dbNear, DWORD PTR dbNear+4, DWORD PTR dbFar, DWORD PTR dbFar+4
 	
 	invoke glMatrixMode, GL_MODELVIEW
+	
+	invoke DoPlayerState	; Cutscenes, etc
+	
+	.IF (MazeHostile == 0)	; Play siren
+		fild MazeLevel
+		fmul flTenth
+		fsubr fl1
+		fstp camRotDeg
+		invoke Lerp, ADDR MazeSiren, camRotDeg, delta2
+		invoke alSourcef, SndSiren, AL_GAIN, MazeSiren
+		
+		fld MazeSirenTimer
+		fsub deltaTime
+		fstp MazeSirenTimer
+		
+		fcmp MazeSirenTimer
+		.IF Sign?
+			mov MazeHostile, 2
+			m2m MazeSirenTimer, fl10
+		.ENDIF
+	.ELSEIF (MazeHostile == 2)	; Stop siren
+		invoke Lerp, ADDR MazeSiren, 0, delta2
+		invoke alSourcef, SndSiren, AL_GAIN, MazeSiren
+		
+		fld MazeSirenTimer
+		fsub deltaTime
+		fstp MazeSirenTimer
+		
+		fcmp MazeSirenTimer
+		.IF Sign?
+			mov MazeHostile, 3
+			fild MazeLevel
+			fmul flTenth
+			fstp MazeSirenTimer
+			
+			fild MazeLevel
+			fmul flHundredth
+			fsubr fl1
+			fstp camRotDeg
+			invoke alSourcef, SndExplosion, AL_GAIN, camRotDeg
+			invoke alSourcePlay, SndExplosion
+			
+			invoke alSourceStop, SndSiren
+		.ENDIF
+	.ELSEIF (MazeHostile == 3)	; Wait for impact
+		fld MazeSirenTimer
+		fsub deltaTime
+		fstp MazeSirenTimer
+		
+		fcmp MazeSirenTimer
+		.IF Sign?
+			mov MazeHostile, 4
+			m2m MazeSirenTimer, fl3
+			
+			fild MazeLevel
+			fmul flHundredth
+			fsubr fl1
+			fst camRotDeg
+			
+			invoke alSourcef, SndImpact, AL_GAIN, camRotDeg
+			invoke alSourcePlay, SndImpact
+			
+			fmul flTenth
+			fstp camRotDeg
+			m2m MazeSiren, camRotDeg
+		.ENDIF
+	.ELSEIF (MazeHostile == 4)	; Shake screen
+		fld MazeSirenTimer
+		fsub deltaTime
+		fstp MazeSirenTimer
+		
+		invoke Lerp, ADDR MazeSiren, 0, delta2
+		invoke Shake, MazeSiren
+		
+		fcmp MazeSirenTimer
+		.IF Sign?
+			mov MazeHostile, 1
+			invoke alSourcePlay, SndAmb
+		.ENDIF
+	.ENDIF
+	
 	invoke glLoadIdentity
 	
-	
 	invoke glLightfv, GL_LIGHT0, GL_POSITION, ADDR camLight	; Draw light
-	
-	invoke glDepthFunc, GL_LEQUAL
 	
 	invoke Lerp, ADDR camRotL, camRot, delta10
 	invoke LerpAngle, ADDR camRotL[4], camRot[4], flHalf
@@ -3439,7 +4231,11 @@ Render PROC
 	invoke glRotatef, camRotDeg, camCos, 0, camSin
 	
 	
-	fld camStep	; Walk animation
+	fld camStepSide	; Walk animation
+	fsin
+	fstp camRotDeg
+	invoke glRotatef, camRotDeg, 0, fl1, 0
+	fld camStep
 	fmul fl2
 	fsin
 	fmul flHalf
@@ -3466,7 +4262,38 @@ Render PROC
 	fsub camCurSpeed[8]
 	fstp camPosNext[8]
 	
-	invoke DrawMaze	; Draw maze
+	.IF (playerState == 12)
+		invoke glBindTexture, GL_TEXTURE_2D, TexRoof
+		invoke glCallList, 40
+		invoke glBindTexture, GL_TEXTURE_2D, TexFacade
+		invoke glCallList, 41
+		invoke glBindTexture, GL_TEXTURE_2D, TexFloor
+		invoke glCallList, 42
+	.ELSEIF (playerState == 14)
+		invoke glBindTexture, GL_TEXTURE_2D, TexRoof
+		invoke glCallList, 43
+		invoke glBindTexture, GL_TEXTURE_2D, TexFloor
+		invoke glCallList, 44
+		invoke glEnable, GL_BLEND
+		invoke glBlendFunc, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA
+		invoke glBindTexture, GL_TEXTURE_2D, TexTree
+		invoke glCallList, 45
+		invoke glDisable, GL_BLEND
+	.ELSEIF (playerState == 16)
+		invoke glBindTexture, GL_TEXTURE_2D, TexDoor
+		invoke glCallList, 46
+		invoke glBindTexture, GL_TEXTURE_2D, TexFloor
+		invoke glCallList, 44
+		invoke glEnable, GL_BLEND
+		invoke glBlendFunc, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA
+		invoke glBindTexture, GL_TEXTURE_2D, TexTree
+		invoke glCallList, 45
+		invoke glDisable, GL_BLEND
+	.ENDIF
+	
+	.IF (Maze)
+		invoke DrawMaze	; Draw maze
+	.ENDIF
 	
 	.IF (kubale > 28)
 		invoke KubaleAI
@@ -3486,37 +4313,7 @@ Render PROC
 		invoke DrawWmblykAngry
 	.ENDIF
 	
-	.IF (MazeLocked == 1)
-		invoke nrandom, 100
-		.IF (eax == 0)
-			invoke nrandom, 360
-			mov MazeKeyRot[4], eax
-			fild MazeKeyRot[4]
-			fstp MazeKeyRot[4]
-		.ENDIF
-		fld deltaTime
-		fmul flTenth
-		fstp camRotDeg
-		invoke Lerp, ADDR MazeKeyRot, MazeKeyRot[4], camRotDeg
-		invoke glPushMatrix
-			invoke glEnable, GL_BLEND
-			invoke glBlendFunc, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA
-			invoke glBindTexture, GL_TEXTURE_2D, TexKey
-			invoke glTranslatef, MazeKeyPos, 0, MazeKeyPos[4]
-			invoke glRotatef, MazeKeyRot, 0, fl1, 0
-			invoke glCallList, 35
-			invoke glDisable, GL_BLEND
-		invoke glPopMatrix
-		invoke DistanceToSqr, camPosN, camPosN[4], MazeKeyPos, MazeKeyPos[4]
-		mov camRotDeg, eax
-		fcmp camRotDeg, fl1
-		.IF Sign?
-			mov MazeLocked, 2
-			invoke ShowSubtitles, ADDR CCKey
-			invoke alSource3f, SndKey, AL_POSITION, MazeKeyPos, fl1, MazeKeyPos[4]
-			invoke alSourcePlay, SndKey
-		.ENDIF
-	.ENDIF
+	invoke DrawMazeItems
 	
 	fld camPos	; Move camera by speed
 	fadd camCurSpeed
@@ -3535,8 +4332,9 @@ Render ENDP
 ; Render user interface
 RenderUI PROC
 	LOCAL screenWD: REAL8, screenHD: REAL8
-	LOCAL screenWF: REAL4, screenHF: REAL4, btnOffX: REAL4, btnOffY:REAL4, btnOffYS:REAL4, btnA:REAL4, btnOffXE:REAL4, btnOffYE:REAL4
-	LOCAL noiseX: DWORD, noiseY: DWORD
+	LOCAL screenWF: REAL4, screenHF: REAL4
+	LOCAL btnOffY:REAL4, btnOffX: REAL4, btnOffYS:REAL4, btnA:REAL4
+	LOCAL btnOffXE:REAL4, btnOffYE:REAL4
 	LOCAL testR:RECT
 	
 	invoke glMatrixMode, GL_PROJECTION
@@ -3693,6 +4491,46 @@ RenderUI PROC
 		fadd fl90
 		fstp btnOffX
 		invoke DrawBitmapText, MazeLevelStr, btnOffX, btnOffY, FNT_LEFT
+	.ELSEIF (playerState == 13)	; GreatCorn presents
+		fld screenWF
+		fmul flHalf
+		fstp btnOffX
+		fld screenHF
+		fmul flHalf
+		fstp btnOffY
+		
+		invoke glLoadIdentity
+		invoke glBlendFunc, GL_ONE_MINUS_DST_COLOR, GL_ONE_MINUS_SRC_COLOR
+		invoke DrawBitmapText, ADDR CCIntro1, btnOffX, btnOffY, FNT_CENTERED
+	.ELSEIF (playerState == 15)	; GreatCorn presents
+		fld screenWF
+		fmul flHalf
+		fstp btnOffX
+		fld screenHF
+		fmul flHalf
+		fsub fl32
+		fstp btnOffY
+		
+		invoke glLoadIdentity
+		invoke glBlendFunc, GL_ONE_MINUS_DST_COLOR, GL_ONE_MINUS_SRC_COLOR
+		invoke DrawBitmapText, ADDR CCIntro2, btnOffX, btnOffY, FNT_CENTERED
+		
+		fld btnOffY
+		fadd fl32
+		fadd fl32
+		fstp btnOffY
+		invoke DrawBitmapText, ADDR CCIntro3, btnOffX, btnOffY, FNT_CENTERED
+	.ELSEIF (playerState == 17)	; GreatCorn presents
+		fld screenWF
+		fmul flHalf
+		fstp btnOffX
+		fld screenHF
+		fmul flHalf
+		fstp btnOffY
+		
+		invoke glLoadIdentity
+		invoke glBlendFunc, GL_ONE_MINUS_DST_COLOR, GL_ONE_MINUS_SRC_COLOR
+		invoke DrawBitmapText, ADDR AppName, btnOffX, btnOffY, FNT_CENTERED
 	.ENDIF
 	
 	.IF (Menu != 0)	; Menu
@@ -3711,12 +4549,14 @@ RenderUI PROC
 		invoke glColor4f, fl1, fl1, fl1, fl1
 		invoke glCallList, 3
 		
-		invoke glLoadIdentity	; Maze layer
-		invoke glBlendFunc, GL_ONE_MINUS_DST_COLOR, GL_ONE_MINUS_SRC_COLOR
-		invoke glBindTexture, GL_TEXTURE_2D, 0
-		invoke glTranslatef, 1090519040, 1090519040, 0
-		invoke DrawBitmapText, ADDR CCLevel, 0,  0, FNT_LEFT
-		invoke DrawBitmapText, MazeLevelStr, 1123024896,  0, FNT_LEFT
+		.IF (Maze)
+			invoke glLoadIdentity	; Maze layer
+			invoke glBlendFunc, GL_ONE_MINUS_DST_COLOR, GL_ONE_MINUS_SRC_COLOR
+			invoke glBindTexture, GL_TEXTURE_2D, 0
+			invoke glTranslatef, 1090519040, 1090519040, 0
+			invoke DrawBitmapText, ADDR CCLevel, 0,  0, FNT_LEFT
+			invoke DrawBitmapText, MazeLevelStr, 1123024896,  0, FNT_LEFT
+		.ENDIF
 	.ENDIF
 	.IF (Menu == 1)
 		; Buttons
@@ -3836,55 +4676,13 @@ RenderUI PROC
 		invoke DrawBitmapText, ADDR MenuSettingsWIP3, 0, 1111490560, FNT_CENTERED
 	.ENDIF
 	
-	invoke glLoadIdentity	; Draw noise
 	invoke glBlendFunc, GL_DST_COLOR, GL_SRC_COLOR
-	invoke glBindTexture, GL_TEXTURE_2D, TexNoise
+	invoke DrawNoise, TexNoise
 	
-	invoke nrandom, 512	; Random noise offset
-	mov noiseX, eax
-	invoke nrandom, 512
-	mov noiseY, eax
-	
-	fild noiseX
-	fchs
-	fstp screenWF
-	fild noiseY
-	fchs
-	fstp screenHF
-	invoke glTranslatef, screenWF, screenHF, 0
-	
-	invoke glScalef, 1140850688, 1140850688, 0
-	
-	mov eax, screenSize
-	mov ecx, 512
-	xor edx, edx
-	div ecx
-	inc eax
-	inc eax
-	mov noiseX, eax
-	mov eax, screenSize[4]
-	mov ecx, 512
-	xor edx, edx
-	div ecx
-	inc eax
-	inc eax
-	mov noiseY, eax
-	
-	xor ebx, ebx
-	.WHILE (ebx < noiseY)
-		push ebx
-		invoke glPushMatrix
-		xor ebx, ebx
-		.WHILE (ebx < noiseX)
-			invoke glCallList, 3
-			invoke glTranslatef, fl1, 0, 0
-			inc ebx
-		.ENDW
-		pop ebx
-		invoke glPopMatrix
-		invoke glTranslatef, 0, fl1, 0
-		inc ebx
-	.ENDW
+	.IF (playerState == 12) || (playerState == 14) || (playerState == 16)
+		invoke glBlendFunc, GL_SRC_COLOR, GL_ONE
+		invoke DrawNoise, TexRain
+	.ENDIF
 	
 	invoke glDisable, GL_BLEND
 	
@@ -3965,6 +4763,30 @@ SetMazeLevelStr PROC String:DWORD
 	ret
 SetMazeLevelStr ENDP
 
+; Shake screen
+Shake PROC Amplitude:REAL4
+	LOCAL shakeVal:DWORD
+	
+	invoke nrandom, 10
+	mov shakeVal, eax
+	fild shakeVal
+	fsub fl5
+	fmul flFifth
+	fmul Amplitude
+	fadd camRot
+	fstp camRot
+	
+	invoke nrandom, 10
+	mov shakeVal, eax
+	fild shakeVal
+	fsub fl5
+	fmul flFifth
+	fmul Amplitude
+	fadd camRot[4]
+	fstp camRot[4]
+	ret
+Shake ENDP
+
 ; Tried to make it a little more universal, but ShowCursor works badly
 ShowHideCursor PROC Show:BYTE
 	LOCAL ci:CURSORINFO
@@ -4004,7 +4826,7 @@ WndProc PROC hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
 		invoke CreateModels
 		print "Finished initializing",13,10
 		invoke InitAudio
-		invoke GenerateMaze
+		;invoke GenerateMaze
 	.ELSEIF uMsg==WM_DESTROY
 		invoke Halt
 	.ELSEIF uMsg==WM_PAINT

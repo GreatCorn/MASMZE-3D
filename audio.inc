@@ -29,12 +29,17 @@ AL_FALSE EQU 0
 AL_FORMAT_MONO16 EQU 1101h
 AL_FORMAT_STEREO16 EQU 1103h
 AL_GAIN EQU 100Ah
+AL_INITIAL EQU 1011h
 AL_LOOPING EQU 1007h
 AL_MAX_DISTANCE EQU 1023h
 AL_NONE EQU 0
 AL_ORIENTATION EQU 100Fh
+AL_PAUSED EQU 1013h
+AL_PLAYING EQU 1012h
 AL_POSITION EQU 1004h
 AL_ROLLOFF_FACTOR EQU 1021h
+AL_SOURCE_STATE EQU 1010h
+AL_STOPPED EQU 1014h
 AL_TRUE EQU 1
 ALC_DEFAULT_DEVICE_SPECIFIER EQU 1004h
 
@@ -67,6 +72,7 @@ AalSource3f DB "alSource3f", 0
 AalSourcef DB "alSourcef", 0
 AalSourcefv DB "alSourcefv", 0
 AalSourcei DB "alSourcei", 0
+AalSourcePause DB "alSourcePause", 0
 AalSourcePlay DB "alSourcePlay", 0
 AalSourceStop DB "alSourceStop", 0
 
@@ -104,6 +110,7 @@ PalSource3f DWORD ?
 PalSourcef DWORD ?
 PalSourcefv DWORD ?
 PalSourcei DWORD ?
+PalSourcePause DWORD ?
 PalSourcePlay DWORD ?
 PalSourceStop DWORD ?
 
@@ -274,6 +281,11 @@ alSourcei PROC sid:DWORD, param:SDWORD, value:SDWORD
 	call PalSourcei
 	ret
 alSourcei ENDP
+alSourcePause PROC sid:DWORD
+	push sid
+	call PalSourcePause
+	ret
+alSourcePause ENDP
 alSourcePlay PROC sid:DWORD
 	push sid
 	call PalSourcePlay
@@ -330,7 +342,6 @@ LoadAudio PROC FilePath: DWORD, AudioPTR: DWORD
 	invoke alGenSources, 1, AudioPTR
 	mov eax, AudioPTR
 	invoke alSourcei, [eax], AL_BUFFER, buffer
-	
 	;invoke GetProcessHeap
 	;mov buffer, eax
 	;invoke HeapSize, buffer, 0, decoded
@@ -373,7 +384,7 @@ LoadLibraries PROC ErrorProc:DWORD
 	m2m ErrorProcedure, ErrorProc
 	
 	; stb_vorbis
-	invoke LoadLibrary, ADDR stb_vorbisPath
+	invoke LoadLibraryA, ADDR stb_vorbisPath
 	mov stb_vorbis, eax
 	.IF eax == NULL
 		lea eax, ErrorDLL
@@ -415,6 +426,7 @@ LoadLibraries PROC ErrorProc:DWORD
 	invoke LoadProc, OpenAL, ADDR AalSourcef,				ADDR PalSourcef
 	invoke LoadProc, OpenAL, ADDR AalSourcefv,				ADDR PalSourcefv
 	invoke LoadProc, OpenAL, ADDR AalSourcei,				ADDR PalSourcei
+	invoke LoadProc, OpenAL, ADDR AalSourcePause,			ADDR PalSourcePause
 	invoke LoadProc, OpenAL, ADDR AalSourcePlay,			ADDR PalSourcePlay
 	invoke LoadProc, OpenAL, ADDR AalSourceStop,			ADDR PalSourceStop
 	ret
