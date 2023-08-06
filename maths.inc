@@ -56,14 +56,55 @@ fcmpP ENDP
 
 
 .CONST
+D2R REAL4 0.0174532	; Degrees to radians multiplier
 R2D REAL4 57.29578	; Radians to degrees multiplier
+R2I REAL4 0.6366197	; Radians to integer
 PI REAL4 3.1415927
 PIN REAL4 -3.1415927
 PIHalf REAL4 1.5707
 PIHalfN REAL4 -1.5707
 PI2 REAL4 6.2831
 
+fl0 REAL4 0.0			; Generic floats (REAL4) to use with FPU and other
+flThousandth REAL4 0.001
+flHundredth REAL4 0.01
+flTenth REAL4 0.1
+flTenthN REAL4 -0.1
+flFifth REAL4 0.2
+flFifthN REAL4 -0.2
+flQuarter REAL4 0.25
+fl03 REAL4 0.3
+fl03N REAL4 -0.3
+flThird REAL4 0.33
+fl04 REAL4 0.4
+flHalf REAL4 0.5
+flHalfN REAL4 -0.5
+fl06 REAL4 0.6
+fl07N REAL4 -0.7
+fl075 REAL4 0.75
+fl09 REAL4 0.9
+fl1 REAL4 1.0
+fl1N REAL4 -1.0
+fl1n2 REAL4 1.2
+fl1n5 REAL4 1.5
+fl2 REAL4 2.0
+fl3 REAL4 3.0
+fl4 REAL4 4.0
+fl5 REAL4 5.0
+fl6 REAL4 6.0
+fl10 REAL4 10.0
+fl12 REAL4 12.0
+fl32 REAL4 32.0
+fl75 REAL4 75.0
+fl90 REAL4 90.0
+fl90N REAL4 -90.0
+fl360 REAL4 360.0
+fl1000 REAL4 1000.0
+fl10000 REAL4 10000.0
+
 .CODE
+
+Sign PROTO :REAL4
 
 ; Angleify takes a pointer to a float and loops it around like an angle
 Angleify PROC Val: DWORD
@@ -248,6 +289,57 @@ LerpAngle PROC LerpA: DWORD, LerpB: REAL4, LerpT: REAL4
 	ret
 LerpAngle ENDP
 
+; MagnitudeSqr takes two floats as a 2D vector and returns its magnitude
+; (length) squared in EAX
+MagnitudeSqr PROC X:REAL4, Y:REAL4
+	LOCAL Result:REAL4
+
+	fld X
+	fmul X
+	fstp Result
+	fld Y
+	fmul Y
+	fadd Result
+	fstp Result
+	
+	mov eax, Result
+	ret
+MagnitudeSqr ENDP
+
+; MoveTowards takes a pointer to a float and moves it linearly towards value
+; MoveB my MoveT
+MoveTowards PROC MoveA:DWORD, MoveB:REAL4, MoveT:REAL4
+	LOCAL Dist:REAL4, MoveAV: REAL4
+	mov eax, MoveA
+	mov eax, REAL4 PTR [eax]
+	mov MoveAV, eax
+	
+	invoke DistanceScalar, MoveAV, MoveB
+	mov Dist, eax
+	fcmp Dist, MoveT
+	.IF Sign?
+		mov eax, MoveA
+		mov ecx, MoveB
+		mov REAL4 PTR [eax], ecx
+		ret
+	.ENDIF
+
+	fld MoveB
+	fsub MoveAV
+	fstp Dist
+	invoke Sign, Dist
+	mov Dist, eax
+	fld Dist
+	fmul MoveT
+	fadd MoveAV
+	fstp Dist
+	
+	mov eax, MoveA
+	mov ecx, Dist
+	mov REAL4 PTR [eax], ecx
+	ret
+MoveTowards ENDP
+
 ; Normalize takes two pointers to floats as a 2D vector and scales it to unit
 ; length (normalizes it)
 Normalize PROC X: DWORD, Y: DWORD
@@ -349,3 +441,78 @@ ParseFloat PROC String:DWORD
 	mov eax, intFact
 	ret
 ParseFloat ENDP
+
+; RandomFloat takes pointer to float Value and puts a random float from -range
+; to Range into it
+RandomFloat PROC Value:DWORD, Range:DWORD
+	LOCAL intVal:SDWORD
+
+	mov eax, Range
+	mov ecx, 10
+	mul ecx
+	push eax
+	add eax, eax
+	invoke nrandom, eax
+	pop ecx
+	sub eax, ecx
+	mov intVal, eax
+	fild intVal
+	fmul flTenth
+	mov eax, Value
+	fstp REAL4 PTR [eax]
+	ret
+RandomFloat ENDP
+
+; RandomRange returns a random number from -Range to Range in EAX
+RandomRange PROC Range:DWORD
+	mov eax, Range
+	add eax, eax
+	invoke nrandom, eax
+	sub eax, Range
+	ret
+RandomRange ENDP
+
+; Quadratic takes a pointer to a float and interpolates it similarly to a
+; quadratic interpolation function to QuadB by QuadT. Uses fsqrt, may be slow
+Quadratic PROC QuadA:DWORD, QuadB:REAL4, QuadT:REAL4
+	LOCAL QuadAV:REAL4, Dist:REAL4, Root:REAL4
+	mov eax, QuadA
+	mov ecx, REAL4 PTR [eax]
+	mov QuadAV, ecx
+	
+	invoke DistanceScalar, QuadAV, QuadB
+	mov Dist, eax
+	fld QuadT
+	fsqrt
+	fstp Root
+	fcmp Dist, Root
+	.IF Sign?
+		mov eax, QuadA
+		mov ecx, QuadB
+		mov REAL4 PTR [eax], ecx
+	.ENDIF
+	
+	fld QuadT
+	fdiv Dist
+	fstp QuadAV
+	
+	invoke MoveTowards, QuadA, QuadB, QuadAV
+	ret
+Quadratic ENDP
+
+; Sign takes a value and returns its sign (-1, 0, or 1)
+Sign PROC Val:REAL4
+	fcmp Val
+	.IF (Sign? && !Zero?)
+		mov eax, fl1N	; -1.0
+		ret
+	.ENDIF
+	fcmp Val
+	.IF (!Sign? && !Zero?)
+		mov eax, fl1	; 1.0
+		ret
+	.ELSE
+		xor eax, eax		; 0.0
+	.ENDIF
+	ret
+Sign ENDP
