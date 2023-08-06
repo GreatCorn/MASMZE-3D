@@ -1,6 +1,6 @@
 # MASMZE-3D
 MASMZE-3D is a horror maze-runner game made almost entirely on x86 Assembly and native WinAPI procedures with the help of the Microsoft Macro Assembler (MASM32).
-This is the **source code** repository, to play the game, download it from https://greatcorn.itch.io/masmze-3d or https://gamejolt.com/games/masmze-3D/829109
+This is the **source code** repository, to play the game, download it from https://greatcorn.itch.io/masmze-3d or https://greatcorn.gamejolt.io/masmze-3D
 
 ## Building
 To build the game, you can use the **makeit.bat** file included in the folder. Before building, make sure to check the include paths in **masmze.asm**.
