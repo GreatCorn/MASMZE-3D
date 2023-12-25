@@ -68,6 +68,7 @@ PI2 REAL4 6.2831
 fl0 REAL4 0.0			; Generic floats (REAL4) to use with FPU and other
 flThousandth REAL4 0.001
 flHundredth REAL4 0.01
+flHundredthN REAL4 -0.01
 flTenth REAL4 0.1
 flTenthN REAL4 -0.1
 flFifth REAL4 0.2
@@ -76,38 +77,56 @@ flQuarter REAL4 0.25
 fl03 REAL4 0.3
 fl03N REAL4 -0.3
 flThird REAL4 0.33
+flThirdN REAL4 -0.33
 fl04 REAL4 0.4
 flHalf REAL4 0.5
 flHalfN REAL4 -0.5
 fl06 REAL4 0.6
+fl07 REAL4 0.7
 fl07N REAL4 -0.7
 fl075 REAL4 0.75
+fl088 REAL4 0.88
 fl09 REAL4 0.9
 fl1 REAL4 1.0
 fl1N REAL4 -1.0
 fl1n2 REAL4 1.2
 fl1n5 REAL4 1.5
 fl2 REAL4 2.0
+fl2N REAL4 -2.0
+fl2n5 REAL4 2.5
 fl3 REAL4 3.0
 fl4 REAL4 4.0
+fl4N REAL4 -4.0
 fl5 REAL4 5.0
 fl6 REAL4 6.0
+fl8 REAL4 8.0
 fl10 REAL4 10.0
 fl12 REAL4 12.0
+fl12N REAL4 -12.0
+fl13 REAL4 13.0
+fl13N REAL4 -13.0
+fl20 REAL4 20.0
+fl20N REAL4 -20.0
 fl32 REAL4 32.0
+fl48 REAL4 48.0
 fl75 REAL4 75.0
 fl90 REAL4 90.0
 fl90N REAL4 -90.0
+fl96 REAL4 96.0
+fl100 REAL4 100.0
+fl180 REAL4 180.0
 fl360 REAL4 360.0
 fl1000 REAL4 1000.0
+fl2000 REAL4 2000.0
 fl10000 REAL4 10000.0
+fl32768 REAL4 32768.0
 
 .CODE
 
 Sign PROTO :REAL4
 
 ; Angleify takes a pointer to a float and loops it around like an angle
-Angleify PROC Val: DWORD
+Angleify PROC Val:DWORD
 	LOCAL ValF: REAL4
 	mov eax, Val
 	mov ecx, REAL4 PTR [eax]
@@ -134,7 +153,7 @@ Angleify ENDP
 
 ; ATan2 returns the arc tangent of Y and X in radians. This was made before I
 ; realized fpatan does pretty much what I needed
-ATan2 PROC Y: REAL4, X: REAL4
+ATan2 PROC Y:REAL4, X:REAL4
 	LOCAL Val:REAL4
 	
 	fcmp X
@@ -158,7 +177,7 @@ ATan2 PROC Y: REAL4, X: REAL4
 ATan2 ENDP
 
 ; Clamp clamps Val between MinVal and MaxVal, returns the result in EAX
-Clamp PROC Val: REAL4, MinVal: REAL4, MaxVal: REAL4
+Clamp PROC Val:REAL4, MinVal:REAL4, MaxVal:REAL4
 	fcmp Val, MaxVal
 	.IF !Sign? && !Zero?		; X > X1
 		fld MaxVal
@@ -222,7 +241,7 @@ GetDirection ENDP
 
 ; InRange checks if 2D vector (PosX, PosY) is in range (X1, Y1) --
 ; (X2, Y2) and returns result in EAX
-InRange PROC PosX: REAL4,PosY: REAL4, X1: REAL4,X2: REAL4, Y1: REAL4,Y2: REAL4
+InRange PROC PosX:REAL4,PosY:REAL4, X1:REAL4,X2: REAL4, Y1:REAL4,Y2:REAL4
 	LOCAL Flag:BYTE
 
 	mov Flag, 0
@@ -290,7 +309,6 @@ LerpAngle PROC LerpA: DWORD, LerpB: REAL4, LerpT: REAL4
 LerpAngle ENDP
 
 ; MagnitudeSqr takes two floats as a 2D vector and returns its magnitude
-; (length) squared in EAX
 MagnitudeSqr PROC X:REAL4, Y:REAL4
 	LOCAL Result:REAL4
 
@@ -307,7 +325,7 @@ MagnitudeSqr PROC X:REAL4, Y:REAL4
 MagnitudeSqr ENDP
 
 ; MoveTowards takes a pointer to a float and moves it linearly towards value
-; MoveB my MoveT
+; MoveB by MoveT
 MoveTowards PROC MoveA:DWORD, MoveB:REAL4, MoveT:REAL4
 	LOCAL Dist:REAL4, MoveAV: REAL4
 	mov eax, MoveA
@@ -339,6 +357,41 @@ MoveTowards PROC MoveA:DWORD, MoveB:REAL4, MoveT:REAL4
 	mov REAL4 PTR [eax], ecx
 	ret
 MoveTowards ENDP
+
+; MoveTowardsAngle takes a pointer to a float and moves it linearly towards
+; angle MoveB by MoveT, while also 'angleifying' it
+MoveTowardsAngle PROC MoveA:DWORD, MoveB:REAL4, MoveT:REAL4
+	LOCAL Dist:REAL4, MoveAV: REAL4
+	mov eax, MoveA
+	mov eax, REAL4 PTR [eax]
+	mov MoveAV, eax
+	
+	invoke DistanceScalar, MoveAV, MoveB
+	mov Dist, eax
+	fcmp Dist, MoveT
+	.IF Sign?
+		mov eax, MoveA
+		mov ecx, MoveB
+		mov REAL4 PTR [eax], ecx
+		ret
+	.ENDIF
+
+	fld MoveB
+	fsub MoveAV
+	fstp Dist
+	invoke Angleify, ADDR Dist
+	invoke Sign, Dist
+	mov Dist, eax
+	fld Dist
+	fmul MoveT
+	fadd MoveAV
+	fstp Dist
+	
+	mov eax, MoveA
+	mov ecx, Dist
+	mov REAL4 PTR [eax], ecx
+	ret
+MoveTowardsAngle ENDP
 
 ; Normalize takes two pointers to floats as a 2D vector and scales it to unit
 ; length (normalizes it)
@@ -442,8 +495,8 @@ ParseFloat PROC String:DWORD
 	ret
 ParseFloat ENDP
 
-; RandomFloat takes pointer to float Value and puts a random float from -range
-; to Range into it
+; RandomFloat takes pointer to float Value and puts a random float from -Range
+; to Range into it (one-digit fractional)
 RandomFloat PROC Value:DWORD, Range:DWORD
 	LOCAL intVal:SDWORD
 
@@ -471,6 +524,15 @@ RandomRange PROC Range:DWORD
 	sub eax, Range
 	ret
 RandomRange ENDP
+
+; RandomRange2 returns a random number from MinVal to MaxVal in EAX
+RandomRange2 PROC MinVal:SDWORD, MaxVal:SDWORD
+	mov eax, MaxVal
+	sub eax, MinVal
+	invoke nrandom, eax
+	add eax, MinVal
+	ret
+RandomRange2 ENDP
 
 ; Quadratic takes a pointer to a float and interpolates it similarly to a
 ; quadratic interpolation function to QuadB by QuadT. Uses fsqrt, may be slow

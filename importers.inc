@@ -23,7 +23,7 @@ IMG_BMP EQU 1		; Obsolete, not using BMPs anymore
 IMG_GCT EQU 2
 IMG_GCT565 EQU 2
 IMG_GCT332 EQU 4
-IMG_GCT2 EQU 8
+IMG_GCT4 EQU 8
 IMG_GCT5A1 EQU 16
 ; Due to bad decisions in format specification, only the width of the texture
 ; is stored at the beginning of a GCT file, as a DWORD. Thus, if the texture's
@@ -65,7 +65,7 @@ LoadGCM PROC FilePath:DWORD, ListIndex:DWORD
     invoke ReadFile, hFile, buffer, dwFileSize, ADDR dwBytesRead, 0
     invoke CloseHandle, hFile
 	
-	invoke glNewList, ListIndex, GL_COMPILE_AND_EXECUTE
+	invoke glNewList, ListIndex, GL_COMPILE
 	invoke glBegin, GL_TRIANGLES
 	
 	push ebx	; Preserve ebx
@@ -127,11 +127,6 @@ LoadGCT PROC FilePath:DWORD
 	mov eax, 4
 	add eax, MemToUnlock
 	mov pBits, eax
-	
-	print FilePath, 32
-	print str$(dwFileSize), 32
-	print str$(xPic), 32
-	print str$(yPic), 13, 10
 
 	mov eax, pBits
 	ret
@@ -192,10 +187,10 @@ LoadTexture PROC FilePath:DWORD, ImageType:DWORD
 	.ENDIF
 	
 	mov eax, ImageType
-	and eax, IMG_GCT2
+	and eax, IMG_GCT4
 	.IF (eax != 0)
-		invoke glTexImage2D, GL_TEXTURE_2D, 0, GL_RGBA2, xPic, yPic, 0, \
-		GL_RGBA, GL_UNSIGNED_BYTE, hPic
+		invoke glTexImage2D, GL_TEXTURE_2D, 0, GL_RGBA4, xPic, yPic, 0, \
+		GL_RGBA, 8033h, hPic
 	.ENDIF
 	
 	mov eax, ImageType

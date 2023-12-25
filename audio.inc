@@ -63,6 +63,7 @@ AalDeleteSources DB "alDeleteSources", 0
 AalGenBuffers DB "alGenBuffers", 0
 AalGenSources DB "alGenSources", 0
 AalGetError DB "alGetError", 0
+AalGetListenerf DB "alGetListenerf", 0
 AalGetSourcef DB "alGetSourcef", 0
 AalGetSourcei DB "alGetSourcei", 0
 AalListener3f DB "alListener3f", 0
@@ -101,6 +102,7 @@ PalGenBuffers DWORD ?
 PalGenSources DWORD ?
 PalcGetString DWORD ?
 PalGetError DWORD ?
+PalGetListenerf DWORD ?
 PalGetSourcef DWORD ?
 PalGetSourcei DWORD ?
 PalListener3f DWORD ?
@@ -212,6 +214,12 @@ alGetError PROC
 	call PalGetError
 	ret
 alGetError ENDP
+alGetListenerf PROC param:SDWORD, value:DWORD
+	push value
+	push param
+	call PalGetListenerf
+	ret
+alGetListenerf ENDP
 alGetSourcef PROC sid:DWORD, param:SDWORD, value:DWORD
 	push value
 	push param
@@ -319,11 +327,6 @@ LoadAudio PROC FilePath: DWORD, AudioPTR: DWORD
 	LOCAL channels:DWORD, sample:DWORD, decoded:DWORD, fileLen:DWORD
 	LOCAL buffer:DWORD, format:SDWORD, bufferSize:DWORD
 	
-	print "Loading audio: "
-	print FilePath
-	print " into "
-	print str$(AudioPTR), 13, 10
-	
 	invoke stb_vorbis_decode_filename, FilePath, ADDR channels, ADDR sample, \
 	ADDR decoded
 	mov fileLen, eax
@@ -346,13 +349,9 @@ LoadAudio PROC FilePath: DWORD, AudioPTR: DWORD
 	;invoke GetProcessHeap
 	;mov buffer, eax
 	;invoke HeapSize, buffer, 0, decoded
-	;print str$(eax), 32
-	;print str$(bufferSize), 13, 10
 	;invoke HeapFree, buffer, HEAP_NO_SERIALIZE, decoded 
-	;print str$(eax), 13, 10
 	;invoke GlobalFree, decoded
 	;invoke alGetError
-	;print str$(eax), 13, 10
 	ret
 LoadAudio ENDP
 
@@ -417,6 +416,7 @@ LoadLibraries PROC ErrorProc:DWORD
 	invoke LoadProc, OpenAL, ADDR AalGenBuffers,			ADDR PalGenBuffers
 	invoke LoadProc, OpenAL, ADDR AalGenSources,			ADDR PalGenSources
 	invoke LoadProc, OpenAL, ADDR AalGetError,				ADDR PalGetError
+	invoke LoadProc, OpenAL, ADDR AalGetListenerf,			ADDR PalGetListenerf
 	invoke LoadProc, OpenAL, ADDR AalGetSourcef,			ADDR PalGetSourcef
 	invoke LoadProc, OpenAL, ADDR AalGetSourcei,			ADDR PalGetSourcei
 	invoke LoadProc, OpenAL, ADDR AalListener3f,			ADDR PalListener3f
@@ -437,6 +437,5 @@ LoadLibraries ENDP
 FreeLibraries PROC
 	invoke FreeLibrary, stb_vorbis
 	invoke FreeLibrary, OpenAL
-	print "Freed libraries", 13, 10
 	ret
 FreeLibraries ENDP
