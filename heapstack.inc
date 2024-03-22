@@ -91,7 +91,6 @@ HSInit PROC
 		.IF (Heap == 0)
 			invoke GetProcessHeap
 			mov Heap, eax
-			print "Couldn't create heap, got process heap.", 13, 10
 		.ELSE
 			invoke HeapLock, Heap
 		.ENDIF
