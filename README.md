@@ -18,6 +18,6 @@ The in-game bitmap font uses a GCF file that contains null-terminated string pat
 
 The game's code, not including the external libraries, is licensed under the GNU General Public License v3.0. The game's assets are licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
 
-© Yevhenii Ionenko (aka GreatCorn), 2023
+© Yevhenii Ionenko (aka GreatCorn), 2023-2024
 
 https://greatcorn.github.io/me/
