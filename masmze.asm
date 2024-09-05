@@ -15,9 +15,12 @@
 ;	You should have received a copy of the GNU General Public License
 ;	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-.386
+.586
 .model flat,stdcall
 option casemap:none
+
+; Compile-time EQUs
+DEBUG EQU <1>
 
 ; Include libraries
 include include\windows.inc
@@ -254,6 +257,7 @@ MenuFullscreen DB "Fullscreen:", 0
 MenuResolution DB "Windowed resolution:", 0
 MenuBrightness DB "Brightness:", 0
 MenuMouseSensitivity DB "Mouse sensitivity:", 0
+MenuMouseSmoothing DB "Mouse smoothing:", 0
 MenuJoystick DB "Joystick:", 0
 MenuJoystickSensitivity DB "Joystick sensitivity:", 0
 MenuAudioVolume DB "Audio volume:", 0
@@ -380,6 +384,7 @@ IniControls DB "Controls", 0
 IniJoystickID DB "JoystickID", 0
 IniJoystickSensitivity DB "JoystickSensitivity", 0
 IniMouseSensitivity DB "MouseSensitivity", 0
+IniMouseSmoothing DB "MouseSmoothing", 0
 IniVolume DB "Volume", 0
 IniFalse DB "false", 0
 IniTrue DB "true", 0
@@ -784,6 +789,7 @@ CCTip DWORD OFFSET CCTipEmpty
 canControl BYTE 0			; Boolean to enable/disable player control
 focused BYTE 1				; Window focus
 fullscreen BYTE 0			; Boolean to store if the game is fullscreen
+smoothMouse BYTE 0			; Boolean to store if mouse smoothing is applied
 resEnum DWORD 0				; Monitor resolution enumerator
 playerState BYTE 11			; Player state for various uses, like cutscenes
 screenSize DWORD 800, 600	; Screen size, changes when resizing
@@ -1098,6 +1104,7 @@ stJoyLabel HWND ?	; Settings window joystick label
 stJoyCombo HWND ?	; Settings window joystick combobox
 stMSensLabel HWND ?	; Settings window mouse sensitivity label
 stMSensTrack HWND ?	; Settings window mouse sensitivity trackbar
+stMSmoothing HWND ?	; Settings window mouse smoothing checkbox
 stJSensLabel HWND ?	; Settings window joystick sensitivity label
 stJSensTrack HWND ?	; Settings window joystick sensitivity trackbar
 stVolLabel HWND ?	; Settings window audio volume label
@@ -1259,6 +1266,7 @@ PixelLock DWORD ?
 .CODE
 
 AlertWB PROTO :BYTE
+VirdyaReact PROTO :REAL4, :REAL4, :REAL4
 DrawTram PROTO
 EraseTempSave PROTO
 ErrorOut PROTO :DWORD
@@ -3588,7 +3596,6 @@ DrawCroa PROC
 			fstp CroaColor[8]
 			invoke glLightfv, GL_LIGHT0, GL_AMBIENT, ADDR CroaColor
 		.ENDIF
-		;invoke glLightfv, GL_LIGHT0, GL_AMBIENT, ADDR AscendColor
 	.ENDIF
 	
 	fld MazeGlyphsPos
@@ -4354,6 +4361,9 @@ DrawMaze PROC
 				.IF (Sign?)
 					invoke alSourcePlay, SndSlam
 					invoke AlertWB, 3
+					.IF (virdya)
+						invoke VirdyaReact, fl1, fl1, fl6
+					.ENDIF
 					mov doorSlam, 3
 				.ENDIF
 			.ELSEIF (doorSlam == 3)
@@ -8755,7 +8765,6 @@ GetCellMZC ENDP
 ; Calculate deltaTime
 GetDelta PROC
 	LOCAL diff: DWORD
-	LOCAL fps: REAL4
 	
 	invoke QueryPerformanceCounter, ADDR tick
 	mov eax, tick
@@ -8879,7 +8888,7 @@ GetSettings PROC
 	
 	; Fullscreen
 	invoke GetPrivateProfileString, ADDR IniGraphics, ADDR IniFullscreen, \
-	ADDR IniFalse, ADDR IniReturn, 9, ADDR IniPathAbs
+	ADDR IniTrue, ADDR IniReturn, 9, ADDR IniPathAbs
 	.IF (IniReturn == 116) || (IniReturn == 84) ; t or T
 		mov fullscreen, -1
 		invoke SetFullscreen, fullscreen
@@ -8927,6 +8936,13 @@ GetSettings PROC
 	ADDR IniMouseSensitivity, ADDR Ini03, ADDR IniReturn, 9, ADDR IniPathAbs
 	invoke ParseFloat, ADDR IniReturn
 	mov camTurnSpeed, eax
+	
+	; Mouse smoothing
+	invoke GetPrivateProfileString, ADDR IniControls, ADDR IniMouseSmoothing, \
+	ADDR IniTrue, ADDR IniReturn, 9, ADDR IniPathAbs
+	.IF (IniReturn == 116) || (IniReturn == 84) ; t or T
+		mov smoothMouse, 1
+	.ENDIF
 	
 	; Audio volume
 	invoke GetPrivateProfileString, ADDR IniAudio, \
@@ -10398,6 +10414,7 @@ KeyPress PROC Key:DWORD, State:BYTE
 		.ENDIF
 		ret
 	; DEBUG BINDINGS FOR TESTING
+	IFDEF DEBUG
 	.ELSEIF Key == 70
 		.IF (debugF != al)
 			mov debugF, al
@@ -10543,6 +10560,7 @@ KeyPress PROC Key:DWORD, State:BYTE
 			mov wmblyk, 8
 			mov wmblykStealthy, 0
 		.ENDIF
+	ENDIF
 	.ENDIF
 	
 	ret
@@ -10686,19 +10704,24 @@ MouseMove PROC
 	
 	fild mouseRel
 	fmul camTurnSpeed
-	fmul deltaTime
+	fmul flHundredth
 	fsubr camRot[4]
 	fstp camRot[4]
 	
 	fild mouseRel[2]
 	fmul camTurnSpeed
-	fmul deltaTime
+	fmul flHundredth
 	fadd camRot
 	fstp camRot
 	
 	; Loop the direction once it has rotated fully
 	invoke Angleify, ADDR camRot[4]
 	invoke Angleify, ADDR camRotL[4]
+	
+	.IF (!smoothMouse)
+		m2m camRotL, camRot
+		m2m camRotL[4], camRot[4]
+	.ENDIF
 	ret
 MouseMove ENDP
 
@@ -10972,6 +10995,16 @@ SettingsProc PROC hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
 			invoke SetFullscreen, al
 		.ELSEIF (wParam == 115)
 			invoke DestroyWindow, stHwnd
+		.ELSEIF (wParam == 116)
+			invoke IsDlgButtonChecked, stHwnd, wParam
+			mov smoothMouse, al
+			.IF (al)
+				lea ebx, IniTrue
+			.ELSE
+				lea ebx, IniFalse
+			.ENDIF
+			invoke WritePrivateProfileStringA, ADDR IniControls, \
+			ADDR IniMouseSmoothing, ebx, ADDR IniPathAbs
 		.ELSE
 			mov eax, wParam
 			shr eax, 16
@@ -11097,7 +11130,7 @@ OpenSettings PROC
 	; Commence
 	invoke CreateWindowEx, 0, ADDR ClassSett, ADDR MenuSettings, \
 	WS_POPUPWINDOW or WS_CAPTION, CW_USEDEFAULT, CW_USEDEFAULT, \
-	200, 346, hwnd, NULL, hInstance, NULL
+	200, 366, hwnd, NULL, hInstance, NULL
 	mov stHwnd, eax
 	
 	mov maxW, 200
@@ -11111,69 +11144,91 @@ OpenSettings PROC
 	invoke ShowWindow, stHwnd, SW_SHOWDEFAULT
 	
 	; Create all elements
+	; Fullscreen checkbox
 	invoke CreateWindowEx, NULL, ADDR ClassButton, ADDR MenuFullscreen, \
 	WS_CHILD or WS_VISIBLE or BS_AUTOCHECKBOX or BS_LEFTTEXT, 4, 6, maxW, 15, \
 	stHwnd, 100, hInstance, NULL
 	mov stFullCheck, eax
 	invoke SendMessage, stFullCheck, BM_SETCHECK, fullscreen, 0
 	
+	; Resolution label
 	invoke CreateWindowEx, NULL, ADDR ClassStatic, ADDR MenuResolution, \
 	WS_CHILD or WS_VISIBLE, 6, 26, maxW, 15, \
 	stHwnd, NULL, hInstance, NULL
 	mov stResolLabel, eax
+	; Resolution combobox
 	invoke CreateWindowEx, NULL, ADDR ClassCombo, NULL, \
 	WS_CHILD or WS_VISIBLE or CBS_DROPDOWNLIST or CBS_HASSTRINGS or WS_VSCROLL,\
 	6, 42, maxW, 256, stHwnd, 102, hInstance, NULL
 	mov stResolCombo, eax
+	; Brightness label
 	invoke CreateWindowEx, NULL, ADDR ClassStatic, ADDR MenuBrightness, \
 	WS_CHILD or WS_VISIBLE, 6, 66, maxW, 20, stHwnd, NULL, hInstance, NULL
 	mov stBrigLabel, eax
+	; Brightness trackbar
 	invoke CreateWindowEx, NULL, ADDR ClassTrackbar, NULL, \
 	WS_CHILD or WS_VISIBLE, 6, 82, maxW, 20, \
 	stHwnd, 104, hInstance, NULL
 	mov stBrigTrack, eax
 	
+	; <HR/>
 	invoke CreateWindowEx, NULL, ADDR ClassStatic, NULL, \
 	WS_CHILD or WS_VISIBLE or SS_SUNKEN, 6, 108, maxW, 2, stHwnd, NULL, \
 	hInstance, NULL
 	
+	; Mouse sensitivity label
 	invoke CreateWindowEx, NULL, ADDR ClassStatic, ADDR MenuMouseSensitivity, \
 	WS_CHILD or WS_VISIBLE, 6, 116, maxW, 15, stHwnd, NULL, hInstance, NULL
 	mov stMSensLabel, eax
+	; Mouse sensitivity trackbar
 	invoke CreateWindowEx, NULL, ADDR ClassTrackbar, NULL,\
 	WS_CHILD or WS_VISIBLE, 6, 132, maxW, 20, \
 	stHwnd, 107, hInstance, NULL
 	mov stMSensTrack, eax
+	; Mouse smoothing checkbox
+	invoke CreateWindowEx, NULL, ADDR ClassButton, ADDR MenuMouseSmoothing, \
+	WS_CHILD or WS_VISIBLE or BS_AUTOCHECKBOX or BS_LEFTTEXT, 4, 156, maxW, 15,\
+	stHwnd, 116, hInstance, NULL
+	mov stMSmoothing, eax
+	invoke SendMessage, stMSmoothing, BM_SETCHECK, smoothMouse, 0
 	
+	; Joystick label
 	invoke CreateWindowEx, NULL, ADDR ClassStatic, ADDR MenuJoystick, \
-	WS_CHILD or WS_VISIBLE, 6, 156, maxW, 15, stHwnd, NULL, hInstance, NULL
+	WS_CHILD or WS_VISIBLE, 6, 176, maxW, 15, stHwnd, NULL, hInstance, NULL
 	mov stJoyLabel, eax
+	; Joystick combobox
 	invoke CreateWindowEx, NULL, ADDR ClassCombo, NULL, \
 	WS_CHILD or WS_VISIBLE or CBS_DROPDOWNLIST or CBS_HASSTRINGS or WS_VSCROLL,\
-	6, 172, maxW, 256, stHwnd, 109, hInstance, NULL
+	6, 192, maxW, 256, stHwnd, 109, hInstance, NULL
 	mov stJoyCombo, eax
+	; Joystick sensitivity label
 	invoke CreateWindowEx, NULL, ADDR ClassStatic,ADDR MenuJoystickSensitivity,\
-	WS_CHILD or WS_VISIBLE, 6, 196, maxW, 15, stHwnd, NULL, hInstance, NULL
+	WS_CHILD or WS_VISIBLE, 6, 216, maxW, 15, stHwnd, NULL, hInstance, NULL
 	mov stJSensLabel, eax
+	; Joystick sensitivity trackbar
 	invoke CreateWindowEx, NULL, ADDR ClassTrackbar, NULL,\
-	WS_CHILD or WS_VISIBLE, 6, 212, maxW, 20, \
+	WS_CHILD or WS_VISIBLE, 6, 232, maxW, 20, \
 	stHwnd, 111, hInstance, NULL
 	mov stJSensTrack, eax
 	
+	; <HR/>
 	invoke CreateWindowEx, NULL, ADDR ClassStatic, NULL, \
-	WS_CHILD or WS_VISIBLE or SS_SUNKEN, 6, 238, maxW, 2, stHwnd, NULL, \
+	WS_CHILD or WS_VISIBLE or SS_SUNKEN, 6, 258, maxW, 2, stHwnd, NULL, \
 	hInstance, NULL
 	
+	; Volume label
 	invoke CreateWindowEx, NULL, ADDR ClassStatic, ADDR MenuAudioVolume, \
-	WS_CHILD or WS_VISIBLE, 6, 246, maxW, 15, stHwnd, NULL, hInstance, NULL
+	WS_CHILD or WS_VISIBLE, 6, 266, maxW, 15, stHwnd, NULL, hInstance, NULL
 	mov stVolLabel, eax
+	; Volume trackbar
 	invoke CreateWindowEx, NULL, ADDR ClassTrackbar, NULL,\
-	WS_CHILD or WS_VISIBLE, 6, 262, maxW, 20, \
+	WS_CHILD or WS_VISIBLE, 6, 282, maxW, 20, \
 	stHwnd, 114, hInstance, NULL
 	mov stVolTrack, eax
 	
+	; OK button
 	invoke CreateWindowEx, NULL, ADDR ClassButton, ADDR MenuOK, \
-	WS_CHILD or WS_VISIBLE, 64, 286, 64, 24, \
+	WS_CHILD or WS_VISIBLE, 64, 306, 64, 24, \
 	stHwnd, 115, hInstance, NULL
 	mov stOkBtn, eax
 	
@@ -11262,6 +11317,7 @@ OpenSettings PROC
 	invoke SendMessage, stResolCombo, WM_SETFONT, font, TRUE
 	invoke SendMessage, stBrigLabel, WM_SETFONT, font, TRUE
 	invoke SendMessage, stMSensLabel, WM_SETFONT, font, TRUE
+	invoke SendMessage, stMSmoothing, WM_SETFONT, font, TRUE
 	invoke SendMessage, stJoyLabel, WM_SETFONT, font, TRUE
 	invoke SendMessage, stJoyCombo, WM_SETFONT, font, TRUE
 	invoke SendMessage, stJSensLabel, WM_SETFONT, font, TRUE
@@ -11854,6 +11910,9 @@ RenderUI PROC
 	LOCAL screenWF: REAL4, screenHF: REAL4
 	LOCAL btnOffY:REAL4, btnOffX: REAL4, btnOffYS:REAL4, btnA:REAL4
 	LOCAL btnOffXE:REAL4, btnOffYE:REAL4
+	IFDEF DEBUG
+		LOCAL FPS:DWORD
+	ENDIF
 	
 	invoke glMatrixMode, GL_PROJECTION
 	invoke glLoadIdentity
@@ -12025,6 +12084,15 @@ RenderUI PROC
 			.ENDIF
 		.ENDIF
 	.ENDIF
+	
+	IFDEF DEBUG	; FPS counter
+		fld1
+		fdiv deltaTime
+		fistp FPS
+		invoke glLoadIdentity
+		invoke glBlendFunc, GL_ONE_MINUS_DST_COLOR, GL_ONE_MINUS_SRC_COLOR
+		invoke DrawBitmapText, str$(FPS), fl8, fl8, FNT_LEFT
+	ENDIF
 	
 	.IF (playerState == 10)	; Death screen
 		fld screenWF
