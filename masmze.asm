@@ -20,7 +20,8 @@
 option casemap:none
 
 ; Compile-time EQUs
-DEBUG EQU <1>
+DEBUG EQU <1>	; For features like debug keys and FPS counter
+USE_DLL EQU <1>	; Whilst looking for a way to avoid liploaderapi (Win2k support)
 
 ; Include libraries
 include include\windows.inc
@@ -818,19 +819,13 @@ joyLMB BYTE 0
 
 msX REAL4 0.0	; Mouse position as REAL4
 msY REAL4 0.0
-winX SWORD 0	; Window position
-winY SWORD 0
-winW SWORD 0	; Window size
-winH SWORD 0
-winWS SWORD 0	; Size from settings
-winHS SWORD 0
-winWH SWORD 0
-winHH SWORD 0
-winCX SWORD 0	; Window center
-winCY SWORD 0
-winWHF REAL4 0.0
+winPos POINT <0,0>		; Window position
+winWSize POINT <0,0>	; Window size
+winSSize POINT <0,0>	; Size from settings
+winHSize POINT <0,0>	; Half size
+winCenter POINT <0,0>	; Window center
+winWHF REAL4 0.0		; Half size (float)
 winHHF REAL4 0.0
-winSize DWORD 0
 
 camCrouch REAL4 0.0					; Camera crouch value that gets added to Y
 camCurSpeed REAL4 0.0, 0.0, 0.0		; Current camera speed
@@ -855,8 +850,8 @@ camJoySpeed REAL4 2.0				; Joystick sensitivity
 
 lastStepSnd DWORD 0		; Last step sound index, to not repeat it
 
-mouseRel SWORD 0, 0		; Mouse position, relative to screen center
-mousePos SWORD 0, 0		; Absolute mouse position
+mouseRel POINT <0,0>		; Mouse position, relative to screen center
+mousePos POINT <0,0>		; Absolute mouse position
 
 ccTimer REAL4 -1.0	; Subtitles timer
 ccText DWORD 0		; Subtitles text pointer	
@@ -1582,9 +1577,7 @@ JoystickButtons PROC JoyInfo:DWORD
 	.ENDIF
 	.IF (al != joyGlyph)
 		mov joyGlyph, al
-		push ebx
 		invoke KeyPress, 71, al
-		pop ebx
 		mov joyUsed, 1
 	.ENDIF
 	
@@ -1592,9 +1585,7 @@ JoystickButtons PROC JoyInfo:DWORD
 	and eax, JOY_BUTTON5
 	.IF (al != joyCrouch)
 		mov joyCrouch, al
-		push ebx
 		invoke KeyPress, 17, al
-		pop ebx
 		mov joyUsed, 1
 	.ENDIF
 	
@@ -1607,9 +1598,7 @@ JoystickButtons PROC JoyInfo:DWORD
 	shr eax, 7
 	.IF (al != joyMenu)
 		mov joyMenu, al
-		push ebx
 		invoke KeyPress, 27, al
-		pop ebx
 		mov joyUsed, 1
 	.ENDIF
 	
@@ -1622,9 +1611,7 @@ JoystickButtons PROC JoyInfo:DWORD
 	shr eax, 6
 	.IF (al != joyConfirm)
 		mov joyConfirm, al
-		push ebx
 		invoke KeyPress, 13, al
-		pop ebx
 		mov joyUsed, 1
 	.ENDIF
 	
@@ -1637,13 +1624,19 @@ JoystickButtons PROC JoyInfo:DWORD
 	.IF (al != joyLMB)
 		mov joyLMB, al
 		.IF (joyLMB)
-			mov keyLMB, 1
+			.IF (Menu)
+				invoke mouse_event, MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0
+			.ELSE
+				mov keyLMB, 1
+			.ENDIF
 		.ELSE
-			mov keyLMB, 0
+			.IF (Menu)
+				invoke mouse_event, MOUSEEVENTF_LEFTUP, 0, 0, 0, 0
+			.ELSE
+				mov keyLMB, 0
+			.ENDIF
 		.ENDIF
-		push ebx
 		invoke KeyPress, 32, al
-		pop ebx
 		mov joyUsed, 1
 	.ENDIF
 	
@@ -1757,16 +1750,15 @@ JoystickMenu PROC JoyInfo:DWORD
 	mov dist, eax
 	fcmp dist, flTenth
 	.IF (!Sign?)
-		xor eax, eax
-		mov ax, mousePos
+		mov eax, mousePos.x
 		mov joyY, eax
 		fld joyX
 		fmul camJoySpeed
-		fmul fl10
+		fmul fl5
 		fiadd joyY
 		fistp joyX
 		mov eax, joyX
-		mov mousePos, ax
+		mov mousePos.x, eax
 		inc moved
 	.ENDIF
 	fild [ebx].dwYpos	; Y axis
@@ -1777,25 +1769,27 @@ JoystickMenu PROC JoyInfo:DWORD
 	mov dist, eax
 	fcmp dist, flTenth
 	.IF (!Sign?)
-		xor eax, eax
-		mov ax, mousePos[2]
+		mov eax, mousePos.y
 		mov joyX, eax
 		fld joyY
 		fmul camJoySpeed
-		fmul fl10
+		fmul fl5
 		fiadd joyX
 		fistp joyY
 		mov eax, joyY
-		mov mousePos[2], ax
+		mov mousePos.y, eax
 		inc moved
 	.ENDIF
 	
 	.IF (moved)
-		print sword$(mousePos), 32
-		mov ax, mousePos[2]
-		print sword$(ax), 13, 10
 		mov joyUsed, 1
-		invoke CreateThread, NULL, 0, OFFSET MouseMove, 0, 0, NULL
+		mov eax, mousePos.x
+		add eax, winPos.x
+		mov ecx, mousePos.y
+		add ecx, winPos.y
+		invoke SetCursorPos, eax, ecx
+		call MouseMove
+		;invoke CreateThread, NULL, 0, OFFSET MouseMove, 0, 0, NULL
 	.ENDIF
 	
 	assume ebx:nothing
@@ -2461,6 +2455,7 @@ DoMenu PROC
 		mov camCurSpeed[8], 0
 		mov focused, 0
 		;invoke ShowHideCursor, 1
+		call ReleaseCapture
 		
 		invoke alGetSourcei, SndAlarm, AL_SOURCE_STATE, ADDR AudSt
 		.IF (AudSt == AL_PLAYING)
@@ -2582,6 +2577,7 @@ DoMenu PROC
 			.ENDIF
 			mov focused, 1
 			;invoke ShowHideCursor, 0
+			invoke SetCapture, hwnd
 			
 			invoke alGetSourcei, SndAlarm, AL_SOURCE_STATE, ADDR AudSt
 			.IF (AudSt == AL_PAUSED)
@@ -2903,7 +2899,7 @@ DoPlayerState PROC
 		.ENDIF
 		invoke ShowSubtitles, eax
 		
-		fild mouseRel[2]
+		fild mouseRel.y
 		fmul deltaTime
 		fadd wmblykStr
 		fstp camRot
@@ -8764,10 +8760,11 @@ GetCellMZC ENDP
 
 ; Calculate deltaTime
 GetDelta PROC
-	LOCAL diff: DWORD
+	LOCAL diff:DWORD, testTick:LARGE_INTEGER
 	
-	invoke QueryPerformanceCounter, ADDR tick
-	mov eax, tick
+	invoke QueryPerformanceCounter, ADDR testTick
+	mov eax, testTick.LowPart
+	mov tick, eax
 	sub eax, lastTime
 	mov diff, eax
 
@@ -8867,23 +8864,23 @@ GetSettings PROC
 	; Width & height
 	invoke GetPrivateProfileInt, ADDR IniGraphics, ADDR IniWidth, 800, \
 	ADDR IniPathAbs
-	mov winW, ax
+	mov winWSize.x, eax
 	
 	invoke GetPrivateProfileInt, ADDR IniGraphics, ADDR IniHeight, 600, \
 	ADDR IniPathAbs
-	mov winH, ax
+	mov winWSize.y, eax
 	
-	m2m winWS, winW
-	m2m winHS, winH
+	m2m winSSize.x, winWSize.x
+	m2m winSSize.y, winWSize.y
 	
 	invoke GetSystemMetrics, SM_CXSIZEFRAME
-	add ax, ax
-	add winW, ax
-	add winH, ax
+	add eax, eax
+	add winWSize.x, eax
+	add winWSize.y, eax
 	invoke GetSystemMetrics, SM_CYCAPTION
-	add winH, ax
+	add winWSize.y, eax
 	
-	invoke SetWindowPos, hwnd, HWND_TOPMOST, 0, 0, winW, winH, \
+	invoke SetWindowPos, hwnd, HWND_TOPMOST, 0, 0, winWSize.x, winWSize.y, \
 	SWP_NOZORDER or SWP_FRAMECHANGED or SWP_SHOWWINDOW or SWP_NOMOVE
 	
 	; Fullscreen
@@ -8961,27 +8958,27 @@ GetSettings ENDP
 
 ; Get global window center with position
 GetWindowCenter PROC
-	mov cx, 2
+	mov ecx, 2
 	
-	mov ax, winW
+	mov eax, winWSize.x
 	xor edx, edx
-	div cx
-	mov winWH, ax
-	push ax
-	mov ax, winH
+	div ecx
+	mov winHSize.x, eax
+	push eax
+	mov eax, winWSize.y
 	xor edx, edx
-	div cx
-	mov winHH, ax
+	div ecx
+	mov winHSize.y, eax
 	
-	add ax, winY
-	mov winCY, ax
-	pop ax
-	add ax, winX
-	mov winCX, ax
+	add eax, winPos.y
+	mov winCenter.y, eax
+	pop eax
+	add eax, winPos.x
+	mov winCenter.x, eax
 	
-	fild winWH
+	fild winHSize.x
 	fstp winWHF
-	fild winHH
+	fild winHSize.y
 	fstp winHHF
 	ret
 GetWindowCenter ENDP
@@ -10254,7 +10251,6 @@ InitContext PROC WindowHandle:DWORD
 	.ENDIF
 	print "Performance frequency "
 	print sdword$(perfFreq), 13, 10
-	
 	ret
 InitContext ENDP
 
@@ -10263,22 +10259,22 @@ KeyPress PROC Key:DWORD, State:BYTE
 	LOCAL param:DWORD
 
 	mov al, State
-	.IF Key == 87		; W
+	.IF Key == VK_W		; W
 		mov keyUp, al
 		ret
-	.ELSEIF Key == 83	; S
+	.ELSEIF Key == VK_S	; S
 		mov keyDown, al
 		ret
-	.ELSEIF Key == 65	; A
+	.ELSEIF Key == VK_A	; A
 		mov keyLeft, al
 		ret
-	.ELSEIF Key == 68	; D
+	.ELSEIF Key == VK_D	; D
 		mov keyRight, al
 		ret
-	.ELSEIF Key == 17	; Ctrl
+	.ELSEIF Key == VK_CONTROL	; Ctrl
 		mov keyCtrl, al
 		ret
-	.ELSEIF Key == 13	; Enter, confirm different things
+	.ELSEIF Key == VK_RETURN	; Enter, confirm different things
 		.IF (Shop == 2)
 			.IF (Glyphs >= 5)
 				sub Glyphs, 5
@@ -10330,7 +10326,7 @@ KeyPress PROC Key:DWORD, State:BYTE
 			invoke EraseSave
 		.ENDIF
 		ret
-	.ELSEIF Key == 27	; Escape, skip intro and use menu
+	.ELSEIF Key == VK_ESCAPE	; Escape, skip intro and use menu
 		.IF (playerState >= 11) && (playerState <= 17) && (MazeHostile != 11)
 			invoke alSourceStop, SndIntro
 			invoke alSourcePlay, SndSiren
@@ -10352,15 +10348,23 @@ KeyPress PROC Key:DWORD, State:BYTE
 			.ENDIF
 			invoke DoMenu
 		.ENDIF
-	.ELSEIF Key == 115	; F4, toggle fullscreen
+	.ELSEIF Key == VK_F4	; F4, toggle fullscreen
 		.IF (!State)
 			mov al, fullscreen
 			not al
 			mov fullscreen, al
+			
+			lea ecx, IniFalse
+			.IF (al)
+				lea ecx, IniTrue
+			.ENDIF
+			invoke WritePrivateProfileStringA, ADDR IniGraphics, \
+			ADDR IniFullscreen, ecx, ADDR IniPathAbs
+			
 			invoke SetFullscreen, fullscreen
 		.ENDIF
 		ret
-	.ELSEIF Key == 32	; Space, fight Wmblyk
+	.ELSEIF Key == VK_SPACE	; Space, fight Wmblyk
 		.IF (keySpace != al) && (Menu == 0)
 			mov al, State
 			mov keySpace, al
@@ -10373,15 +10377,15 @@ KeyPress PROC Key:DWORD, State:BYTE
 			.ENDIF
 		.ENDIF
 		ret
-	.ELSEIF Key == 71	; G, place glyph
+	.ELSEIF Key == VK_G	; G, place glyph
 		.IF (State) && (canControl) && (Maze) && (MazeTramPlr < 2)
 			.IF (Glyphs != 0)
 				dec Glyphs
 				xor eax, eax
 				mov al, GlyphsInLayer
 				
-				mov ebx, 8
-				mul ebx
+				mov ecx, 8
+				mul ecx
 				m2m GlyphPos[eax], camPosN
 				m2m GlyphPos[eax+4], camPosN[4]
 				
@@ -10390,8 +10394,8 @@ KeyPress PROC Key:DWORD, State:BYTE
 				
 				xor eax, eax
 				mov al, GlyphsInLayer
-				mov ebx, 4
-				mul ebx
+				mov ecx, 4
+				mul ecx
 				
 				fild param
 				fstp GlyphRot[eax]
@@ -10415,7 +10419,7 @@ KeyPress PROC Key:DWORD, State:BYTE
 		ret
 	; DEBUG BINDINGS FOR TESTING
 	IFDEF DEBUG
-	.ELSEIF Key == 70
+	.ELSEIF Key == VK_F
 		.IF (debugF != al)
 			mov debugF, al
 			.IF (debugF)
@@ -10443,7 +10447,7 @@ KeyPress PROC Key:DWORD, State:BYTE
 			.ENDIF
 		.ENDIF
 		ret
-	.ELSEIF Key == 69
+	.ELSEIF Key == VK_E
 		.IF (!State)
 			print "Spawned Eblodryn", 13, 10
 			mov EBD, 1
@@ -10454,7 +10458,7 @@ KeyPress PROC Key:DWORD, State:BYTE
 			invoke alSourcePlay, SndEBDA
 		.ENDIF
 		ret
-	.ELSEIF Key == 84
+	.ELSEIF Key == VK_T
 		.IF (!State)
 			fld MazeDoorPos
 			fstp camPos
@@ -10462,33 +10466,33 @@ KeyPress PROC Key:DWORD, State:BYTE
 			fstp camPos[8]
 		.ENDIF
 		ret
-	.ELSEIF Key == 75
+	.ELSEIF Key == VK_K
 		.IF (!State)
 			m2m kubaleDir, fl1
 			mov kubale, 1
 		.ENDIF
 		ret
-	.ELSEIF Key == 219
+	.ELSEIF Key == VK_OEM_4
 		.IF (!State)
 			inc MazeW
 		.ENDIF
 		ret
-	.ELSEIF Key == 221
+	.ELSEIF Key == VK_OEM_6
 		.IF (!State)
 			inc MazeH
 		.ENDIF
 		ret
-	.ELSEIF Key == 220
+	.ELSEIF Key == VK_OEM_5
 		.IF (!State)
 			invoke WBCreate
 		.ENDIF
 		ret
-	.ELSEIF Key == 117
+	.ELSEIF Key == VK_F6
 		.IF (!State)
 			invoke SaveGame
 		.ENDIF
 		ret
-	.ELSEIF Key == 89
+	.ELSEIF Key == VK_Y
 		.IF (!State)
 			.IF !(wmblyk)
 				m2m wmblykPos, fl1
@@ -10500,52 +10504,52 @@ KeyPress PROC Key:DWORD, State:BYTE
 			mov wmblykBlink, 0
 		.ENDIF
 		ret
-	.ELSEIF Key == 66
+	.ELSEIF Key == VK_B
 		.IF (!State)
 			mov Glyphs, 7
 		.ENDIF
 		ret
-	.ELSEIF Key == 78
+	.ELSEIF Key == VK_N
 		.IF (!State)
 			mov hbd, 0
 			mov kubale, 0
 			mov wmblyk, 0
 		.ENDIF
 		ret
-	.ELSEIF Key == 67
+	.ELSEIF Key == VK_C
 		.IF (!State)
 			mov Compass, 2
 			mov MazeLocked, 2
 		.ENDIF
 		ret
-	.ELSEIF Key == 73
+	.ELSEIF Key == VK_I
 		.IF (!State)
 			invoke alSourceStop, SndSiren
 			invoke alSourcePlay, SndAmb
 			mov MazeHostile, 1
 		.ENDIF
 		ret
-	.ELSEIF Key == 88
+	.ELSEIF Key == VK_X
 		.IF (!State)
 			m2m camPos, fl1N
 			m2m camPos[8], fl1N
 		.ENDIF
-	.ELSEIF Key == 90
+	.ELSEIF Key == VK_Z
 		.IF (!State)
 			inc MazeLevel
 			print str$(MazeLevel), 13, 10
 		.ENDIF
-	.ELSEIF Key == 190
+	.ELSEIF Key == VK_OEM_PERIOD
 		.IF (!State)
 			add MazeLevel, 5
 			print str$(MazeLevel), 13, 10
 		.ENDIF
-	.ELSEIF Key == 188
+	.ELSEIF Key == VK_OEM_COMMA
 		.IF (!State)
 			sub MazeLevel, 5
 			print str$(MazeLevel), 13, 10
 		.ENDIF
-	.ELSEIF Key == 86
+	.ELSEIF Key == VK_V
 		.IF (!State)
 			m2m virdyaPos, camPosN
 			m2m virdyaPos[4], camPosN[4]
@@ -10553,7 +10557,7 @@ KeyPress PROC Key:DWORD, State:BYTE
 			invoke alSourcePlay, SndVirdya
 			mov Vebra, 133
 		.ENDIF
-	.ELSEIF Key == 85
+	.ELSEIF Key == VK_U
 		.IF (!State)
 			m2m wmblykPos, fl1
 			m2m wmblykPos[4], fl1
@@ -10664,7 +10668,7 @@ LoadGame PROC
 	ADDR Glyphs, ADDR pcbData
 	invoke RegCloseKey, defKey
 	
-	invoke SetCursorPos, winCX, winCY
+	invoke SetCursorPos, winCenter.x, winCenter.y
 	mov camRot, 0
 	invoke SetMazeLevelStr, str$(MazeLevel)
 	m2m MazeLevelPopupTimer, fl2
@@ -10680,35 +10684,43 @@ LoadGame ENDP
 MouseMove PROC
 	LOCAL winCYB:SWORD
 	
-	fild mousePos
-	fstp msX
-	fild mousePos[2]
-	fstp msY
+	invoke GetCursorPos, ADDR mousePos
 		
-	mov ax, mousePos	; X mouse = Y cam
-	add ax, winX
-	sub ax, winCX
-	mov mouseRel, ax
+	mov eax, mousePos.x	; X mouse = Y cam
+	push eax
+	sub eax, winCenter.x
+	mov mouseRel.x, eax
+	pop eax
+	sub eax, winPos.x
+	mov mousePos.x, eax
 	
-	mov ax, mousePos[2]	; Y mouse = X cam
-	add ax, winY
-	sub ax, winCY
-	mov mouseRel[2], ax
+	mov eax, mousePos.y	; Y mouse = X cam
+	push eax
+	sub eax, winCenter.y
+	mov mouseRel.y, eax
+	pop eax
+	sub eax, winPos.y
+	mov mousePos.y, eax
 	
-	m2m winCYB, winCY
-	add winCYB, 64
+	fild mousePos.x
+	fstp msX
+	fild mousePos.y
+	fstp msY
+	
+	;print str$(mouseRel.x), 9
+	;print str$(mouseRel.y), 13,10
 	
 	.IF (!focused) || (!canControl)
 		ret
 	.ENDIF
 	
-	fild mouseRel
+	fild mouseRel.x
 	fmul camTurnSpeed
 	fmul flHundredth
 	fsubr camRot[4]
 	fstp camRot[4]
 	
-	fild mouseRel[2]
+	fild mouseRel.y
 	fmul camTurnSpeed
 	fmul flHundredth
 	fadd camRot
@@ -10717,11 +10729,6 @@ MouseMove PROC
 	; Loop the direction once it has rotated fully
 	invoke Angleify, ADDR camRot[4]
 	invoke Angleify, ADDR camRotL[4]
-	
-	.IF (!smoothMouse)
-		m2m camRotL, camRot
-		m2m camRotL[4], camRot[4]
-	.ENDIF
 	ret
 MouseMove ENDP
 
@@ -11256,7 +11263,7 @@ OpenSettings PROC
 			m2m scrH, dm.dmPelsHeight
 			mov eax, dm.dmPelsWidth
 			mov ecx, dm.dmPelsHeight
-			.IF (winWS == ax) && (winHS == cx)
+			.IF (winSSize.x == eax) && (winSSize.y == ecx)
 				invoke SendMessage, stResolCombo, CB_SETCURSEL, maxW, 0
 			.ENDIF
 			inc maxW
@@ -11525,6 +11532,7 @@ Render PROC
 	invoke alListenerfv, AL_ORIENTATION, ADDR camListener
 	
 	
+	call MouseMove
 	.IF (joystickID != -1)
 		mov joyInfo.dwSize, SIZEOF JOYINFOEX
 		mov joyInfo.dwFlags, JOY_RETURNX or JOY_RETURNY or JOY_RETURNZ \
@@ -11544,7 +11552,7 @@ Render PROC
 	.ENDIF
 	
 	.IF focused == 1	; Mouse lock
-		invoke SetCursorPos, winCX, winCY
+		invoke SetCursorPos, winCenter.x, winCenter.y
 	.ENDIF
 	
 	invoke glClear, GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT
@@ -11691,8 +11699,15 @@ Render PROC
 	.ELSE
 		m2m camRotDeg, delta20
 	.ENDIF
-	invoke Lerp, ADDR camRotL, camRot, camRotDeg
-	invoke LerpAngle, ADDR camRotL[4], camRot[4], camRotDeg
+	.IF (smoothMouse)
+		invoke Clamp, camRotDeg, 0, fl1
+		mov camRotDeg, eax
+		invoke Lerp, ADDR camRotL, camRot, camRotDeg
+		invoke LerpAngle, ADDR camRotL[4], camRot[4], camRotDeg
+	.ELSE
+		m2m camRotL, camRot
+		m2m camRotL[4], camRot[4]
+	.ENDIF
 	
 	fld camRotL[4]
 	fmul R2D
@@ -11718,9 +11733,11 @@ Render PROC
 	fstp camRotDeg
 	invoke glRotatef, camRotDeg, camCos, 0, camSin
 	
-	invoke Lerp, ADDR camPosL, camPos, delta20
-	invoke Lerp, ADDR camPosL[4], camPos[4], delta20
-	invoke Lerp, ADDR camPosL[8], camPos[8], delta20
+	invoke Clamp, delta20, 0, fl1
+	mov camRotDeg, eax
+	invoke Lerp, ADDR camPosL, camPos, camRotDeg
+	invoke Lerp, ADDR camPosL[4], camPos[4], camRotDeg
+	invoke Lerp, ADDR camPosL[8], camPos[8], camRotDeg
 	
 	fld camPos
 	fchs
@@ -12370,27 +12387,13 @@ RenderUI PROC
 RenderUI ENDP
 
 ; Handle window resize
-Resize PROC SizeW: SWORD, SizeH: SWORD
+Resize PROC SizeW: SDWORD, SizeH: SDWORD
 	print "Resolution changed to: "
-	print sword$(SizeW), "x"
-	print sword$(SizeH), 13, 10
+	print str$(SizeW), "x"
+	print str$(SizeH), 13, 10
 	
-	xor eax, eax
-	mov ax, SizeW
-	mov screenSize, eax
-	mov ax, SizeH
-	mov screenSize[4], eax
-	
-	push ebx
-	xor ebx, ebx
-	mov bx, SizeW
-	mul ebx
-	mov ebx, 3
-	mul ebx
-	mov winSize, eax
-	print "WINDOW SIZE: "
-	print str$(winSize), 13, 10
-	pop ebx
+	m2m screenSize, SizeW
+	m2m screenSize[4], SizeH
 	
 	invoke glViewport, 0, 0, SizeW, SizeH
 	fild SizeW
@@ -12561,6 +12564,7 @@ WndProc PROC hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
 		invoke InitAudio
 		invoke LoadGame
 		invoke ShowCursor, 0
+		invoke SetCapture, hWnd
 	.ELSEIF uMsg==WM_DESTROY
 		invoke Halt
 	.ELSEIF uMsg==WM_PAINT
@@ -12572,33 +12576,31 @@ WndProc PROC hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
 		invoke KeyPress, wParam, 0
 	.ELSEIF uMsg==WM_SIZE
 		mov eax, lParam
-		mov winW, ax
+		xor ecx, ecx
+		mov cx, ax
+		mov winWSize.x, ecx
 		mov ecx, lParam
 		shr ecx, 16
-		mov winH, cx
+		mov winWSize.y, ecx
 		invoke GetWindowCenter
-		invoke Resize, winW, winH
+		invoke Resize, winWSize.x, winWSize.y
 	.ELSEIF uMsg==WM_MOVE
 		mov eax, lParam
-		mov winX, ax
+		xor ecx, ecx
+		mov cx, ax
+		mov winPos.x, ecx
 		mov ecx, lParam
 		shr ecx, 16
-		mov winY, cx
+		mov winPos.y, ecx
+		print "Pos:"
+		print str$(winPos.x), 9
+		print str$(winPos.y), 13, 10
 		invoke GetWindowCenter
 		
 		.IF (GetIniSettingsOnFirstFrame == 0)
 			mov GetIniSettingsOnFirstFrame, 1
 			invoke GetSettings
 		.ENDIF
-	.ELSEIF uMsg==WM_MOUSEMOVE
-		; There has to be a way to map DWORD to 2 consecutive words
-		mov eax, lParam
-		mov mousePos, ax
-		mov eax, lParam
-		shr eax, 16
-		mov mousePos[2], ax
-		;mov joyUsed, 0
-		invoke CreateThread, NULL, 0, OFFSET MouseMove, 0, 0, NULL
 	.ELSEIF uMsg==WM_SETFOCUS
 		;invoke ShowHideCursor, 0
 		.IF (Menu == 2)

@@ -128,186 +128,245 @@ ErrorProcedure DWORD ?
 ; I'm sure there is a better way to import DLL functions in MASM32, but I
 ; couldn't find anything and went with what I knew, creating this abomination
 stb_vorbis_decode_filename PROC filename:DWORD, channels:DWORD, sample_rate:DWORD, output:DWORD
+	IFDEF USE_DLL
 	push output
 	push sample_rate
 	push channels
 	push filename
 	call Pstb_vorbis_decode_filename
+	ENDIF
 	ret
 stb_vorbis_decode_filename ENDP
 
 alcCloseDevice PROC device:DWORD
+	IFDEF USE_DLL
 	push device
 	call PalcCloseDevice
+	ENDIF
 	ret
 alcCloseDevice ENDP
 alcCreateContext PROC device:DWORD, attrlist:DWORD
+	IFDEF USE_DLL
 	push attrlist
 	push device
 	call PalcCreateContext
+	ENDIF
 	ret
 alcCreateContext ENDP
 alcDestroyContext PROC context:DWORD
+	IFDEF USE_DLL
 	push context
 	call PalcDestroyContext
+	ENDIF
 	ret
 alcDestroyContext ENDP
 alcGetContextsDevice PROC context:DWORD
+	IFDEF USE_DLL
 	push context
 	call PalcGetContextsDevice
+	ENDIF
 	ret
 alcGetContextsDevice ENDP
 alcGetCurrentContext PROC
+	IFDEF USE_DLL
 	call PalcGetCurrentContext
+	ENDIF
 	ret
 alcGetCurrentContext ENDP
 alcGetString PROC device:DWORD, param: SDWORD
+	IFDEF USE_DLL
 	push param
 	push device
 	call PalcGetString
+	ENDIF
 	ret
 alcGetString ENDP
 alcMakeContextCurrent PROC context:DWORD
+	IFDEF USE_DLL
 	push context
 	call PalcMakeContextCurrent
+	ENDIF
 	ret
 alcMakeContextCurrent ENDP
 alcOpenDevice PROC devicename:DWORD
+	IFDEF USE_DLL
 	push devicename
 	call PalcOpenDevice
+	ENDIF
 	ret
 alcOpenDevice ENDP
 alBufferData PROC bid:DWORD, format:SDWORD, data:DWORD, _size:SDWORD, freq:SDWORD
+	IFDEF USE_DLL
 	push freq
 	push _size
 	push data
 	push format
 	push bid
 	call PalBufferData
+	ENDIF
 	ret
 alBufferData ENDP
 alDeleteBuffers PROC n:SDWORD, buffers:DWORD
+	IFDEF USE_DLL
 	push buffers
 	push n
 	call PalDeleteBuffers
+	ENDIF
 	ret
 alDeleteBuffers ENDP
 alDeleteSources PROC n:SDWORD, sources:DWORD
+	IFDEF USE_DLL
 	push sources
 	push n
 	call PalDeleteSources
+	ENDIF
 	ret
 alDeleteSources ENDP
 alGenBuffers PROC n:SDWORD, buffers:DWORD
+	IFDEF USE_DLL
 	push buffers
 	push n
 	call PalGenBuffers
+	ENDIF
 	ret
 alGenBuffers ENDP
 alGenSources PROC n:SDWORD, sources:DWORD
+	IFDEF USE_DLL
 	push sources
 	push n
 	call PalGenSources
+	ENDIF
 	ret
 alGenSources ENDP
 alGetError PROC
+	IFDEF USE_DLL
 	call PalGetError
+	ENDIF
 	ret
 alGetError ENDP
 alGetListenerf PROC param:SDWORD, value:DWORD
+	IFDEF USE_DLL
 	push value
 	push param
 	call PalGetListenerf
+	ENDIF
 	ret
 alGetListenerf ENDP
 alGetSourcef PROC sid:DWORD, param:SDWORD, value:DWORD
+	IFDEF USE_DLL
 	push value
 	push param
 	push sid
 	call PalGetSourcef
+	ENDIF
 	ret
 alGetSourcef ENDP
 alGetSourcei PROC sid:DWORD, param:SDWORD, value:DWORD
+	IFDEF USE_DLL
 	push value
 	push param
 	push sid
 	call PalGetSourcei
+	ENDIF
 	ret
 alGetSourcei ENDP
 alListener3f PROC param:SDWORD, value1:REAL4, value2:REAL4, value3:REAL4
+	IFDEF USE_DLL
 	push value3
 	push value2
 	push value1
 	push param
 	call PalListener3f
+	ENDIF
 	ret
 alListener3f ENDP
 alListenerf PROC param:SDWORD, value:REAL4
+	IFDEF USE_DLL
 	push value
 	push param
 	call PalListenerf
+	ENDIF
 	ret
 alListenerf ENDP
 alListenerfv PROC param:SDWORD, values:DWORD
+	IFDEF USE_DLL
 	push values
 	push param
 	call PalListenerfv
+	ENDIF
 	ret
 alListenerfv ENDP
 alListeneri PROC param:SDWORD, value:SDWORD
+	IFDEF USE_DLL
 	push value
 	push param
 	call PalListeneri
+	ENDIF
 	ret
 alListeneri ENDP
 alSource3f PROC sid:DWORD, param:SDWORD, value1:REAL4, value2:REAL4, value3:REAL4
+	IFDEF USE_DLL
 	push value3
 	push value2
 	push value1
 	push param
 	push sid
 	call PalSource3f
+	ENDIF
 	ret
 alSource3f ENDP
 alSourcef PROC sid:DWORD, param:SDWORD, value:REAL4
+	IFDEF USE_DLL
 	push value
 	push param
 	push sid
 	call PalSourcef
+	ENDIF
 	ret
 alSourcef ENDP
 alSourcefv PROC sid:DWORD, param:SDWORD, values:DWORD
+	IFDEF USE_DLL
 	push values
 	push param
 	push sid
 	call PalSourcefv
+	ENDIF
 	ret
 alSourcefv ENDP
 alSourcei PROC sid:DWORD, param:SDWORD, value:SDWORD
+	IFDEF USE_DLL
 	push value
 	push param
 	push sid
 	call PalSourcei
+	ENDIF
 	ret
 alSourcei ENDP
 alSourcePause PROC sid:DWORD
+	IFDEF USE_DLL
 	push sid
 	call PalSourcePause
+	ENDIF
 	ret
 alSourcePause ENDP
 alSourcePlay PROC sid:DWORD
+	IFDEF USE_DLL
 	push sid
 	call PalSourcePlay
+	ENDIF
 	ret
 alSourcePlay ENDP
 alSourceStop PROC sid:DWORD
+	IFDEF USE_DLL
 	push sid
 	call PalSourceStop
+	ENDIF
 	ret
 alSourceStop ENDP
 
 ; InitOpenAL opens a device and creates a context
 InitOpenAL PROC
+	IFDEF USE_DLL
 	;invoke alcGetString, NULL, ALC_DEFAULT_DEVICE_SPECIFIER
 	invoke alcOpenDevice, NULL
 	mov AudioDevice, eax
@@ -319,11 +378,13 @@ InitOpenAL PROC
 	invoke alcCreateContext, AudioDevice, NULL
 	mov AudioContext, eax
 	invoke alcMakeContextCurrent, AudioContext
+	ENDIF
 	ret
 InitOpenAL ENDP
 
 ; LoadAudio loads an OGG Vorbis audio at FilePath into AudioPTR
 LoadAudio PROC FilePath: DWORD, AudioPTR: DWORD
+	IFDEF USE_DLL
 	LOCAL channels:DWORD, sample:DWORD, decoded:DWORD, fileLen:DWORD
 	LOCAL buffer:DWORD, format:SDWORD, bufferSize:DWORD
 	
@@ -352,21 +413,25 @@ LoadAudio PROC FilePath: DWORD, AudioPTR: DWORD
 	;invoke HeapFree, buffer, HEAP_NO_SERIALIZE, decoded 
 	;invoke GlobalFree, decoded
 	;invoke alGetError
+	ENDIF
 	ret
 LoadAudio ENDP
 
 ; FreeAudio frees loaded audio data from memory
 FreeAudio PROC AudioSource:DWORD
+	IFDEF USE_DLL
 	LOCAL bufSID:SDWORD
 	mov ebx, AudioSource
 	invoke alGetSourcei, [ebx], AL_BUFFER, ADDR bufSID
 	invoke alDeleteSources, 1, AudioSource
 	invoke alDeleteBuffers, 1, ADDR bufSID
+	ENDIF
 	ret
 FreeAudio ENDP
 
 ; LoadProc loads a procedure at ProcAdress from Library into OutPtr
 LoadProc PROC Library:DWORD, ProcAdress:DWORD, OutPtr:DWORD
+	IFDEF USE_DLL
 	invoke GetProcAddress, Library, ProcAdress
 	mov ecx, OutPtr
 	mov DWORD PTR [ecx], eax
@@ -375,12 +440,14 @@ LoadProc PROC Library:DWORD, ProcAdress:DWORD, OutPtr:DWORD
 		push eax
 		call ErrorProcedure
 	.ENDIF
+	ENDIF
 	ret
 LoadProc ENDP
 
 ; LoadLibraries loads the stb_vorbis_decode_filename function from stb_vorbis
 ; and all of the defined OpenAL Soft procedures
 LoadLibraries PROC ErrorProc:DWORD
+	IFDEF USE_DLL
 	m2m ErrorProcedure, ErrorProc
 	
 	; stb_vorbis
@@ -430,12 +497,15 @@ LoadLibraries PROC ErrorProc:DWORD
 	invoke LoadProc, OpenAL, ADDR AalSourcePause,			ADDR PalSourcePause
 	invoke LoadProc, OpenAL, ADDR AalSourcePlay,			ADDR PalSourcePlay
 	invoke LoadProc, OpenAL, ADDR AalSourceStop,			ADDR PalSourceStop
+	ENDIF
 	ret
 LoadLibraries ENDP
 
 ; FreeLibraries frees loaded libraries from memory
 FreeLibraries PROC
+	IFDEF USE_DLL
 	invoke FreeLibrary, stb_vorbis
 	invoke FreeLibrary, OpenAL
+	ENDIF
 	ret
 FreeLibraries ENDP
